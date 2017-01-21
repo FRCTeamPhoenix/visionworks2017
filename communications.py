@@ -32,7 +32,7 @@ __delimiter__ = ';'
 
 # return the current time (in a function so that the format can be changed if need be)
 def __time__():
-    return time.time() * 1000
+    return int(time.time() * 1000)
 
 def set_state(state):
     assert isinstance(state, States), 'Value is not a valid state'
