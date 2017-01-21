@@ -1,6 +1,6 @@
 import subprocess
 
-__v4l2ctl = "v4l2-ctl"
+__v4l2ctl__ = "v4l2-ctl"
 PROP_BRIGHTNESS = "brightness"
 PROP_CONTRAST = "contrast"
 PROP_SATURATION = "saturation"
@@ -26,7 +26,7 @@ def get(cami, prop):
     props = __get_props__(cami)
     if not prop in props:
         raise AttributeError("Property not supported for camera!")
-    command = [__v4l2ctl, "--device", "/dev/video" + str(cami), "--get-ctrl", prop]
+    command = [__v4l2ctl__, "--device", "/dev/video" + str(cami), "--get-ctrl", prop]
     out, err = __run__(command)
     return out.decode().strip().split(" ")[1]
 
@@ -36,7 +36,7 @@ def set(cami, prop, val):
         raise AttributeError("Property not supported for camera!")
     if val > props[prop]["max"] or val < props[prop]["min"]:
         raise ValueError("Value not in range for property! (" + str(props[prop]["min"]) + str(props[prop]["max"]) + ")")
-    command = [__v4l2ctl, "--device", "/dev/video" + str(cami), "--set-ctrl", prop + "=" + str(val)]
+    command = [__v4l2ctl__, "--device", "/dev/video" + str(cami), "--set-ctrl", prop + "=" + str(val)]
     #print(command)
     __run__(command)
 
@@ -51,7 +51,7 @@ def restore_defaults(cami):
         set(cami, PROP_WHITE_BALANCE_TEMP_AUTO, 0)
         set(cami, PROP_WHITE_BALANCE_TEMP, props[PROP_WHITE_BALANCE_TEMP]["default"])
 
-    command = [__v4l2ctl, "--device", "/dev/video" + str(cami)]
+    command = [__v4l2ctl__, "--device", "/dev/video" + str(cami)]
     for p in props:
         if p == PROP_EXPOSURE_ABS or p == PROP_WHITE_BALANCE_TEMP:
             continue
@@ -61,7 +61,7 @@ def restore_defaults(cami):
 
 def __has_v4l2__():
     try:
-        subprocess.check_output(__v4l2ctl,
+        subprocess.check_output(__v4l2ctl__,
                                 stderr=subprocess.STDOUT,
                                 shell=True)
         return True;
@@ -71,7 +71,7 @@ def __has_v4l2__():
 
 def __get_props__(cami):
     props = dict()
-    command = [__v4l2ctl, "--device", "/dev/video" + str(cami), "-l"]
+    command = [__v4l2ctl__, "--device", "/dev/video" + str(cami), "-l"]
     out, err = __run__(command)
     lines = out.decode().split("\n")
     lines = [l.strip() for l in lines]
@@ -97,6 +97,3 @@ def __get_props__(cami):
             props[name]["max"] = 1
 
     return props
-
-if not __has_v4l2__():
-    raise ImportError("v4l2-ctl not found, is it in your path?")
