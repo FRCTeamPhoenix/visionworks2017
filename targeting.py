@@ -78,7 +78,8 @@ if cap.isOpened():
             log.info("Running Linux config using v4l2ctl")
             v4l2ctl.restore_defaults(video_source)
             for prop in config.CAMERA_V4L_SETTINGS:
-                v4l2ctl.set(video_source, prop, config.CAMERA_V4L_SETTINGS['prop'])
+                v4l2ctl.set(video_source, prop, config.CAMERA_V4L_SETTINGS[prop])
+            v4l2ctl.set(video_source, v4l2ctl.PROP_EXPOSURE_ABS, config.CAMERA_V4L_SETTINGS[v4l2ctl.PROP_EXPOSURE_ABS])
     else:
         rval = False
         log.critical("Problem reading from capture")
@@ -87,6 +88,7 @@ if cap.isOpened():
 else:
     rval = False
     log.critical("Problem opening capture")
+
     comms.set_state(States.CAMERA_ERROR)
 
 # vars for calculating fps
@@ -141,7 +143,8 @@ while rval:
             elif area > best_area2:
                 best_area2 = area
                 target2 = c
-        target = cv2.convexHull(np.concatenate((target1, target2)))
+        if best_area1 > 0 and best_area2 > 0:
+            target = cv2.convexHull(np.concatenate((target1, target2)))
 
     if target is not None: # there is a target
         # set state

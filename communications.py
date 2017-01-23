@@ -19,11 +19,11 @@ __table__ = NetworkTable.getTable(__table_name__)
 # hardcoded key/values
 __state_id__ = 'jetson_state'
 class States(Enum):
-    POWERED_ON = 'Powered on'
-    CAMERA_ERROR = 'Camera error'
-    TARGET_FOUND = 'Target found'
-    TARGET_NOT_FOUND = 'Target not found'
-    POWERED_OFF = 'Powered off'
+    POWERED_ON = 0
+    CAMERA_ERROR = 1
+    TARGET_FOUND = 2
+    TARGET_NOT_FOUND = 3
+    POWERED_OFF = 4
 
 __targeting_id__ = 'target_angle'
 

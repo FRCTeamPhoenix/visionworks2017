@@ -16,7 +16,7 @@ GUI_EXIT_KEY = 27
 GUI_WAIT_FOR_CONTINUE_KEY = 32
 
 # networktables constants
-NETWORKTABLES_SERVER = 'xavier.local'
+NETWORKTABLES_SERVER = '10.1.42.24'
 NETWORKTABLES_TABLE_NAME = 'datatable'
 
 # logging config
@@ -24,7 +24,7 @@ LOG_LEVEL = logging.DEBUG
 LOG_STREAM = sys.stdout
 
 # camera configuration
-VIDEO_SOURCE = 'output.avi' # can be a camera index or a filename
+VIDEO_SOURCE = 1 # can be a camera index or a filename
 RESOLUTION_X = 640
 RESOLUTION_Y = 480
 CAMERA_V4L_SETTINGS = {
