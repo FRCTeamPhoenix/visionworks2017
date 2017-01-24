@@ -79,7 +79,6 @@ if cap.isOpened():
             v4l2ctl.restore_defaults(video_source)
             for prop in config.CAMERA_V4L_SETTINGS:
                 v4l2ctl.set(video_source, prop, config.CAMERA_V4L_SETTINGS[prop])
-            v4l2ctl.set(video_source, v4l2ctl.PROP_EXPOSURE_ABS, config.CAMERA_V4L_SETTINGS[v4l2ctl.PROP_EXPOSURE_ABS])
     else:
         rval = False
         log.critical("Problem reading from capture")

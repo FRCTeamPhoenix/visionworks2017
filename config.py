@@ -1,6 +1,7 @@
 import logging
 import sys
 import v4l2ctl
+import collections
 import numpy as np
 
 # General
@@ -24,16 +25,16 @@ LOG_LEVEL = logging.DEBUG
 LOG_STREAM = sys.stdout
 
 # camera configuration
-VIDEO_SOURCE = 1 # can be a camera index or a filename
+VIDEO_SOURCE = 0 # can be a camera index or a filename
 RESOLUTION_X = 640
 RESOLUTION_Y = 480
-CAMERA_V4L_SETTINGS = {
-    v4l2ctl.PROP_EXPOSURE_AUTO: 1,
-    v4l2ctl.PROP_EXPOSURE_AUTO_PRIORITY: 0,
-    v4l2ctl.PROP_EXPOSURE_ABS: 10,
-    v4l2ctl.PROP_WHITE_BALANCE_TEMP_AUTO: 0,
-    v4l2ctl.PROP_FOCUS_AUTO: 0
-}
+CAMERA_V4L_SETTINGS = collections.OrderedDict([
+    (v4l2ctl.PROP_EXPOSURE_AUTO, 1),
+    (v4l2ctl.PROP_EXPOSURE_AUTO_PRIORITY, 0),
+    (v4l2ctl.PROP_EXPOSURE_ABS, 10),
+    (v4l2ctl.PROP_WHITE_BALANCE_TEMP_AUTO, 0),
+    (v4l2ctl.PROP_FOCUS_AUTO, 0)
+])
 
 # camera specs (used for pose estimation) (these ones are for the logitech c910 cams)
 CAMERA_MATRIX = np.asarray([[ 771.,      0.,    float(RESOLUTION_X / 2)],

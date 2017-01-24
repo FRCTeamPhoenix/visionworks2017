@@ -38,7 +38,7 @@ def set_state(state):
     assert isinstance(state, States), 'Value is not a valid state'
     last = None
     if __state_id__ in __table__.getKeys():
-        last = __table__.getInt(__state_id__).split(__delimiter__)[1]
+        last = __table__.getString(__state_id__).split(__delimiter__)[1]
     if state.value != last:
         log.info('Set state %s', state.name)
         s = str(__time__()) + __delimiter__ + str(state.value)
