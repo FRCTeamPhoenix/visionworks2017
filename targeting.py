@@ -15,6 +15,10 @@ import communications as comms
 from communications import States
 import v4l2ctl
 import config
+import feed
+import thread
+from capture import Capture
+
 
 # gui config/mode stuff (see config.py for details)
 show_image = config.GUI_SHOW
@@ -58,7 +62,8 @@ log.info('OpenCV %s', cv2.__version__)
 comms.set_state(States.POWERED_ON)
 
 # capture init
-cap = cv2.VideoCapture(video_source)
+cam_server = Capture()
+cap = cam_server.video
 log.info('Loaded capture from %s', video_source)
 
 # set the resolution
@@ -90,16 +95,22 @@ else:
 
     comms.set_state(States.CAMERA_ERROR)
 
+
+
 # vars for calculating fps
 frametimes = list()
 last = time.time()
+
+cam_server.update()
+thread.start_new_thread(feed.init, (cam_server,))
 
 log.info("Starting vision processing loop")
 # loop for as long as we're still getting images
 while rval:
 
     # read the frame
-    rval, frame = cap.read()
+    cam_server.update()
+    rval, frame = cam_server.rval, cam_server.frame
 
     # undistort the image
     dst = cv2.undistort(frame, mtx, dist, None, newcameramtx)
@@ -180,6 +191,7 @@ while rval:
     if draw:
         cv2.putText(frame, str(fps), (10, 40), cv.CV_FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2, 8)
 
+    cam_server.set_jpeg(frame)
     if show_image:
         #scale = 1.48
         #frame = cv2.resize(frame, (int(RESOLUTION_X * (scale + 0.02)), int(RESOLUTION_Y * scale)), interpolation=cv2.INTER_CUBIC)
