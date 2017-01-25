@@ -111,7 +111,7 @@ while rval:
     # read the frame
     cam_server.update()
     rval, frame = cam_server.rval, cam_server.frame
-
+    
     # undistort the image
     dst = cv2.undistort(frame, mtx, dist, None, newcameramtx)
 
@@ -129,6 +129,12 @@ while rval:
     # remove noise
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (morph_kernel_width, morph_kernel_height))
     mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+    
+    # fuse details	
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (25, 25))
+    #mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+    mask = cv2.dilate(mask, kernel)    
+
     res = cv2.bitwise_and(frame, frame, mask=mask)
     res = mask.copy()
 
@@ -137,24 +143,25 @@ while rval:
 
     # there's only a target if there's 2+ contours
     target = None
-    if len(contours) > 1:
+    if len(contours) > 0:
         # find the two biggest contours
         best_area1 = 0
         best_area2 = 0
         target1 = None
-        target2 = None
+        #target2 = None
         for c in contours:
             area = cv2.contourArea(c)
             if area > best_area1:
-                best_area2 = best_area1
-                target2 = target1
+                #best_area2 = best_area1
+                #target2 = target1
                 best_area1 = area
                 target1 = c
-            elif area > best_area2:
-                best_area2 = area
-                target2 = c
-        if best_area1 > 0 and best_area2 > 0:
-            target = cv2.convexHull(np.concatenate((target1, target2)))
+            #elif area > best_area2:
+                #best_area2 = area
+                #target2 = c
+        target = target1
+	#if best_area1 > 0 and best_area2 > 0:
+        #    target = cv2.convexHull(np.concatenate((target1, target2)))
 
     if target is not None: # there is a target
         # set state
@@ -180,13 +187,13 @@ while rval:
     else: # there isn't a target
         # set state
         comms.set_state(States.TARGET_NOT_FOUND)
-
+    
     # calculate fps
     frametimes.append(time.time() - last)
     if len(frametimes) > 60:
         frametimes.pop(0)
     fps = int(1 / (sum(frametimes) / len(frametimes)))
-
+    
     # draw fps
     if draw:
         cv2.putText(frame, str(fps), (10, 40), cv.CV_FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2, 8)

@@ -10,14 +10,14 @@ START_FRAME = 0 # for video replays
 
 
 # GUI configuration
-GUI_SHOW = True
+GUI_SHOW = False
 GUI_DEBUG_DRAW = True
 GUI_WAIT_FOR_CONTINUE = False
 GUI_EXIT_KEY = 27
 GUI_WAIT_FOR_CONTINUE_KEY = 32
 
 # networktables constants
-NETWORKTABLES_SERVER = '10.1.42.24'
+NETWORKTABLES_SERVER = 'roboRIO-142-FRC.local'#'10.1.42.24'
 NETWORKTABLES_TABLE_NAME = 'datatable'
 
 # logging config
@@ -44,7 +44,7 @@ CAMERA_DISTORTION_MATRIX = np.asarray([[ 0.03236637, -0.03763916, -0.00569912, -
 CAMERA_DIAG_FOV = 83
 
 # processing tuning
-THRESH_LOW = np.array([70, 75, 75])
+THRESH_LOW = np.array([70, 100, 40])
 THRESH_HIGH = np.array([80, 255, 255])
 MORPH_KERNEL_WIDTH = 3
 MORPH_KERNEL_HEIGHT = 3

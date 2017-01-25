@@ -1,5 +1,4 @@
 from flask import Flask, render_template, Response
-from gevent.wsgi import WSGIServer
 import time
 
 app = Flask(__name__)
@@ -27,4 +26,4 @@ def video_feed():
 def init(cam_server):
     global cam
     cam = cam_server
-    app.run(debug=False)
+    app.run(host='0.0.0.0', debug=False, threaded=True)
