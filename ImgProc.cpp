@@ -1,15 +1,20 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
-#include <opencv2/cudaimgproc.hpp>
-#include <opencv2/cudafilters.hpp>
-#include <Python.h>
+#include <opencv2/gpu/gpu.hpp>
+#include <opencv2/gpu/gpumat.hpp>
+//#include <opencv2/cudaimgproc.hpp>
+//#include <opencv2/cudafilters.hpp>
+#include <python2.7/Python.h>
+
+#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
+#include <numpy/arrayobject.h>
 
 using namespace cv;
 
 static PyObject* process_frame_gpu(PyObject* self, PyObject* args)
 {
 
-    PyObject* frame;
+    PyArrayObject* frame;
     if (!PyArg_ParseTuple(args, "O", &frame))
     {
         return NULL;
@@ -24,17 +29,17 @@ static PyObject* process_frame_gpu(PyObject* self, PyObject* args)
 
     // numpy array created from a PIL image is 3-dimensional:
     // height x width x num_channels (num_channels being 3 for RGB)
-    assert (PyArray_NDIM(frame) == 3 && PyArray_SHAPE(frame)[2] == 3, "Incorrect dimensions or colors");
+    assert (PyArray_NDIM(frame) == 3 && PyArray_SHAPE(frame)[2] == 3 /*Incorrect dimensions or colors*/);
     
     // Extract the metainformation and the data.
     int rows = PyArray_SHAPE(frame)[0];
     int cols = PyArray_SHAPE(frame)[1];
-    void *frame_data = PyArray_DATA(frame);
+    void *src_frame_data = PyArray_DATA(frame);
     
     // Construct the Mat object and use it.
-    Mat cframe(rows, cols, CV_8UC3, frame_data);
+    Mat cframe(rows, cols, CV_8UC3, src_frame_data);
     
-    static cuda::GpuMat gframe, gmask;
+    static gpu::GpuMat gframe, gmask;
     gframe.upload(cframe);
     
     // convert to HSV and download back to cv_frame for thresholding
@@ -64,16 +69,17 @@ static PyObject* process_frame_gpu(PyObject* self, PyObject* args)
     gmask.upload(cmask); 
     
     // do morph stuff to remove noise (slow, has to be on GPU)
-    Mat kernel_erode = getStructuringElement(CV_MORPH_ELLIPSE, morph_kernel_erode);
+    Mat kernel_erode = getStructuringElement(MORPH_ELLIPSE, morph_kernel_erode);
     gpu::erode(gmask, gmask, kernel_erode);
-    Mat kernel_dilate = getStructuringElement(CV_MORPH_ELLIPSE, morph_kernel_dilate);
+    Mat kernel_dilate = getStructuringElement(MORPH_ELLIPSE, morph_kernel_dilate);
     gpu::dilate(gmask, gmask, kernel_dilate);
     
     // edge detect (done in C++ to make returning values easier lol) 
     gmask.download(cmask);
-    std::vector<std::vector<Mat>> contours;
-    findContours(cmask, contours, NULL, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0));
+    std::vector< std::vector<Mat> > contours;
+    
+    findContours(cmask, contours, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE);
     
     // TODO: return frame? return contours? which is easier
-
+    return 0;
 }

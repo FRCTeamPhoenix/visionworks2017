@@ -134,3 +134,10 @@ ENV/
 
 # Rope project settings
 .ropeproject
+
+
+#####
+
+# ImgProc obj files
+ImgProc.o
+ImgProc.so
