@@ -6,15 +6,15 @@ OPENCV_CFLAGS = `pkg-config --cflags opencv`
 CFLAGS = -c -fPIC $(OPENCV_CFLAGS)
 
 TARGET = ImgProc
-SRC = ImgProc.cpp
-OBJ = ImgProc.o
+SRC = ImgProc.cpp conversion.cpp conversion.h
+OBJ = ImgProc.o conversion.o
 
 
 shared: $(OBJ)
 	g++ -shared $(OBJ) $(OPENCV_LIB) -lpython$(PYTHON_VERSION) -o $(TARGET).so
 
-$(OBJ):
-	g++ $(CFLAGS) $(SRC) -o $(OBJ)
+%.o: %.cpp %.h
+	g++ $(CFLAGS) $< -o $@
 
 clean:
 	rm -f $(OBJ)
