@@ -11,8 +11,9 @@
 
 using namespace cv;
 
-static PyObject* process_frame_gpu(PyObject* self, PyObject* args)
+static PyObject* ImgProc_processFrameGPU(PyObject* self, PyObject* args)
 {
+    printf("Hello from cpp\n");
 
     PyArrayObject* frame;
     if (!PyArg_ParseTuple(args, "O", &frame))
@@ -41,7 +42,8 @@ static PyObject* process_frame_gpu(PyObject* self, PyObject* args)
     
     static gpu::GpuMat gframe, gmask;
     gframe.upload(cframe);
-    
+    printf("Data uploaded to GPU\n");
+    /*
     // convert to HSV and download back to cv_frame for thresholding
     gpu::cvtColor(gframe, gframe, CV_BGR2HSV);
     gframe.download(cframe);
@@ -79,7 +81,19 @@ static PyObject* process_frame_gpu(PyObject* self, PyObject* args)
     std::vector< std::vector<Mat> > contours;
     
     findContours(cmask, contours, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE);
-    
+    */
     // TODO: return frame? return contours? which is easier
-    return 0;
+    return Py_BuildValue("i", 0);
+}
+
+static PyMethodDef ImgProcMethods[] = {
+    {"processFrameGPU",  ImgProc_processFrameGPU, METH_VARARGS,
+     "Process a frame on the GPU"},
+    {NULL, NULL, 0, NULL}        /* Sentinel */
+};
+
+PyMODINIT_FUNC
+initImgProc(void)
+{
+    (void) Py_InitModule("ImgProc", ImgProcMethods);
 }

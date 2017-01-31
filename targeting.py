@@ -18,7 +18,7 @@ import config
 import feed
 import thread
 from capture import Capture
-
+import ImgProc
 
 # gui config/mode stuff (see config.py for details)
 show_image = config.GUI_SHOW
@@ -114,7 +114,8 @@ while rval:
     
     # undistort the image
     dst = cv2.undistort(frame, mtx, dist, None, newcameramtx)
-
+    ImgProc.processFrameGPU(frame)
+    
     # crop the image after undistortion
     x, y, w, h = roi
     dst = dst[y:y + h, x:x + w]

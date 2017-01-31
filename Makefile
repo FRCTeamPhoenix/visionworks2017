@@ -4,6 +4,7 @@ OPENCV_LIB = `pkg-config --libs opencv`
 OPENCV_CFLAGS = `pkg-config --cflags opencv`
 
 CFLAGS = -c -fPIC $(OPENCV_CFLAGS)
+LFLAGS = -L/usr/local/cuda-6.5/lib $(OPENCV_LIB) -lpython$(PYTHON_VERSION)
 
 TARGET = ImgProc
 SRC = ImgProc.cpp
@@ -11,9 +12,9 @@ OBJ = ImgProc.o
 
 
 shared: $(OBJ)
-	g++ -shared $(OBJ) $(OPENCV_LIB) -lpython$(PYTHON_VERSION) -o $(TARGET).so
+	g++ -shared $(OBJ) $(LFLAGS) -o $(TARGET).so
 
-$(OBJ):
+$(OBJ): $(SRC)
 	g++ $(CFLAGS) $(SRC) -o $(OBJ)
 
 clean:
