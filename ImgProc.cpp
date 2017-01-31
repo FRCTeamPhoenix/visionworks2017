@@ -2,12 +2,10 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/gpu/gpu.hpp>
 #include <opencv2/gpu/gpumat.hpp>
-//#include <opencv2/cudaimgproc.hpp>
-//#include <opencv2/cudafilters.hpp>
 #include <python2.7/Python.h>
-
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 #include <numpy/arrayobject.h>
+#include <conversion.h>
 
 using namespace cv;
 
@@ -23,8 +21,6 @@ static PyObject* ImgProc_processFrameGPU(PyObject* self, PyObject* args)
 
     uint8_t thresh_min_vals[] = {127, 127, 127};
     uint8_t thresh_max_vals[] = {255, 255, 255};
-    //int morph_kernel_erode[] = {3, 3};
-    //int morph_kernel_dilate[] = {25, 25};
     Size morph_kernel_erode(3, 3);
     Size morph_kernel_dilate(25, 25);
 
@@ -78,7 +74,6 @@ static PyObject* ImgProc_processFrameGPU(PyObject* self, PyObject* args)
     
     // edge detect (done in C++ to make returning values easier lol) 
     gmask.download(cmask);
-    std::vector< std::vector<Mat> > contours;
     
     findContours(cmask, contours, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE);
     */

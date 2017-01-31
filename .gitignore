@@ -141,3 +141,6 @@ ENV/
 # ImgProc obj files
 ImgProc.o
 ImgProc.so
+
+# Test video file
+*.avi

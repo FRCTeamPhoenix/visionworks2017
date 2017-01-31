@@ -7,8 +7,8 @@ CFLAGS = -c -fPIC $(OPENCV_CFLAGS)
 LFLAGS = -L/usr/local/cuda-6.5/lib $(OPENCV_LIB) -lpython$(PYTHON_VERSION)
 
 TARGET = ImgProc
-SRC = ImgProc.cpp
-OBJ = ImgProc.o
+SRC = ImgProc.cpp conversion.cpp conversion.h
+OBJ = ImgProc.o conversion.o
 
 
 shared: $(OBJ)
