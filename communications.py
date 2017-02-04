@@ -39,7 +39,6 @@ __gears_rvecs_id = 'gear_rvecs'
 __gears_tvecs_id = 'gear_tvecs'
 __gears_timestamp = 'gear_time'
 
-
 # return the current time (in a function so that the format can be changed if need be)
 def __time():
     return int(time.time() * 1000)

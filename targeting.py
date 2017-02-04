@@ -47,6 +47,13 @@ morph_kernel_height = config.MORPH_KERNEL_HEIGHT
 mtx = config.CAMERA_MATRIX
 dist = config.CAMERA_DISTORTION_MATRIX
 
+max_norm_tvecs = config.MAX_NORM_TVECS
+min_norm_tvecs = config.min_norm_tvecs
+
+max_target_area = config.MAX_TARGET_AREA
+min_target_area = config.min_target_area
+
+
 # target camera matrix for undistortion
 newcameramtx, roi=cv2.getOptimalNewCameraMatrix(mtx, dist, (res_x, res_y), 1, (res_x, res_y))
 
@@ -96,50 +103,84 @@ else:
     comms.set_state(States.CAMERA_ERROR)
 
 
+# estimates the pose of a target, returns rvecs and tvecs
+def estimate_pose(target):
+    # fix array dimensions (aka unwrap the double wrapped array)
+    new = []
+    for r in target:
+        new.append([r[0][0], r[0][1]])
+    imgp = np.array(new, dtype=np.float64)
 
-# vars for calculating fps
-frametimes = list()
-last = time.time()
+    # calculate rotation and translation matrices
+    _, rvecs, tvecs = cv2.solvePnP(objp, imgp, mtx, dist)
 
-cam_server.update()
-thread.start_new_thread(feed.init, (cam_server,))
+    if cv2.norm(np.array(tvecs)) < min_norm_tvecs or cv2.norm(np.array(tvecs)) > max_norm_tvecs:
+        tvecs = None
+    if math.isnan(rvecs[0]):
+        rvecs = None
+    return rvecs, tvecs
 
-log.info("Starting vision processing loop")
-# loop for as long as we're still getting images
-while rval:
+# finds the target in a list of contours, returns a matrix with the target polygon
+def gear_contours(contours):
+    if len(contours) > 0:
+        # find the polygon with the largest area
+        # find the two biggest contours
+        best_area1 = 0
+        best_area2 = 0
+        target1 = None
+        target2 = None
+        for c in contours:
+            area = cv2.contourArea(c)
+            if area > best_area1:
+                best_area2 = best_area1
+                target2 = target1
+                best_area1 = area
+                target1 = c
+            elif area > best_area2:
+                best_area2 = area
+                target2 = c
 
-    # read the frame
-    cam_server.update()
-    rval, frame = cam_server.rval, cam_server.frame
-    
-    # undistort the image
-    dst = cv2.undistort(frame, mtx, dist, None, newcameramtx)
+        if best_area1 > 0 and best_area2 > 0:
+            target = cv2.convexHull(np.concatenate((target1, target2)))
 
-    # crop the image after undistortion
-    x, y, w, h = roi
-    dst = dst[y:y + h, x:x + w]
-    frame = dst
+        e = POLY_EPS * cv2.arcLength(target, True)
+        target = cv2.approxPolyDP(target, e, True)
 
-    # convert to hsv colorspace
-    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+        if target is not None:
+            correct_number_of_sides = len(target) == len(objp)
+            area_within_range = best_area > min_target_area and best_area < max_target_area
+            target_within_bounds = True
+            for p in target:
+                # note, array is double wrapped, that's why accessing x and y values here is weird
+                if p[0][0] > res_x - 3 or p[0][0] <= 1 or p[0][1] > res_y - 3 or p[0][1] <= 1:
+                    target_within_bounds = False
+                    break
 
+            if correct_number_of_sides and area_within_range and target_within_bounds:
+                return target
+    return None
+
+def gear_targeting(frame):
     # threshold
     mask = cv2.inRange(hsv, thresh_low, thresh_high)
 
     # remove noise
-    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (morph_kernel_width, morph_kernel_height))
-    mask = cv2.erode(mask, kernel)
-
-    # fuse details	
-    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (25, 25))
-    mask = cv2.dilate(mask, kernel)    
-
-    res = cv2.bitwise_and(frame, frame, mask=mask)
-    res = mask.copy()
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
 
     # get a list of continuous lines in the image
     contours, _ = cv2.findContours(mask, 1, 2)
 
+    # there's only a target if there's 2+ contours
+    target = gear_contours(contours)
+
+    if target is not None:
+        rvecs, tvecs = estimate_pose(target)
+        #comms
+    else:
+        comms.set_state(States.TARGET_NOT_FOUND)
+
+def shooter_contours(contours):
     # there's only a target if there's 2+ contours
     target = None
     if len(contours) > 0:
@@ -147,22 +188,37 @@ while rval:
         best_area1 = 0
         best_area2 = 0
         target1 = None
-        #target2 = None
+        target2 = None
         for c in contours:
             area = cv2.contourArea(c)
             if area > best_area1:
-                #best_area2 = best_area1
-                #target2 = target1
+                best_area2 = best_area1
+                target2 = target1
                 best_area1 = area
                 target1 = c
-            #elif area > best_area2:
-                #best_area2 = area
-                #target2 = c
+            elif area > best_area2:
+                best_area2 = area
+                target2 = c
         target = target1
-	#if best_area1 > 0 and best_area2 > 0:
-        #    target = cv2.convexHull(np.concatenate((target1, target2)))
 
-    if target is not None: # there is a target
+	if best_area1 > 0 and best_area2 > 0:
+            target = cv2.convexHull(np.concatenate((target1, target2)))
+
+    return target
+
+def shooter_targeting(hsv):
+    # threshold
+    mask = cv2.inRange(hsv, thresh_low, thresh_high)
+
+    # remove noise
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+
+    # get a list of continuous lines in the image
+    contours, _ = cv2.findContours(mask, 1, 2)
+
+    target = shooter_contours(contours)
+    if target is not None:
         # set state
         comms.set_state(States.TARGET_FOUND)
 
@@ -183,16 +239,44 @@ while rval:
             cv2.drawContours(frame, [target], 0, (0, 255, 0), 3)
             cv2.drawContours(frame, [np.array([[cx, cy]])], 0, (0, 0, 255), 10)
             cv2.putText(frame, str(angle), (10, 450), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, 9)
-    else: # there isn't a target
-        # set state
+    else:
         comms.set_state(States.TARGET_NOT_FOUND)
-    
+
+
+# vars for calculating fps
+frametimes = list()
+last = time.time()
+
+cam_server.update()
+thread.start_new_thread(feed.init, (cam_server,))
+
+log.info("Starting vision processing loop")
+# loop for as long as we're still getting images
+while rval:
+
+    # read the frame
+    cam_server.update()
+    rval, frame = cam_server.rval, cam_server.frame
+
+    # undistort the image
+    dst = cv2.undistort(frame, mtx, dist, None, newcameramtx)
+
+    # crop the image after undistortion
+    x, y, w, h = roi
+    dst = dst[y:y + h, x:x + w]
+    frame = dst
+
+    # convert to hsv colorspace
+    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+
+    gear_targeting(hsv)
+
     # calculate fps
     frametimes.append(time.time() - last)
     if len(frametimes) > 60:
         frametimes.pop(0)
     fps = int(1 / (sum(frametimes) / len(frametimes)))
-    
+
     # draw fps
     if draw:
         cv2.putText(frame, str(fps), (10, 40), cv.CV_FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2, 8)
@@ -201,7 +285,7 @@ while rval:
     if show_image:
         #scale = 1.48
         #frame = cv2.resize(frame, (int(RESOLUTION_X * (scale + 0.02)), int(RESOLUTION_Y * scale)), interpolation=cv2.INTER_CUBIC)
-        cv2.imshow('res', res)
+        #cv2.imshow('res', res)
         cv2.imshow('frame', frame)
     key = cv2.waitKey(wait_time)
     if wait_for_continue:
