@@ -111,34 +111,36 @@ while rval:
     # read the frame
     cam_server.update()
     rval, frame = cam_server.rval, cam_server.frame
-    
+     
     # undistort the image
     dst = cv2.undistort(frame, mtx, dist, None, newcameramtx)
-    ImgProc.processFrameGPU(frame)
     
     # crop the image after undistortion
     x, y, w, h = roi
     dst = dst[y:y + h, x:x + w]
     frame = dst
+    
+    mask = ImgProc.processFrameGPU(frame)
+    #print(f)
 
     # convert to hsv colorspace
-    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+    #hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
     # threshold
-    mask = cv2.inRange(hsv, thresh_low, thresh_high)
+    #mask = cv2.inRange(hsv, thresh_low, thresh_high)
 
     # remove noise
-    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (morph_kernel_width, morph_kernel_height))
-    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+    #kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (morph_kernel_width, morph_kernel_height))
+    #mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
     
     # fuse details	
-    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (25, 25))
+    #kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (25, 25))
     #mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
-    mask = cv2.dilate(mask, kernel)    
+    #mask = cv2.dilate(mask, kernel)    
 
-    res = cv2.bitwise_and(frame, frame, mask=mask)
-    res = mask.copy()
-
+    #res = cv2.bitwise_and(frame, frame, mask=mask)
+    #res = mask.copy()
+    
     # get a list of continuous lines in the image
     contours, _ = cv2.findContours(mask, 1, 2)
 
@@ -199,7 +201,7 @@ while rval:
     if draw:
         cv2.putText(frame, str(fps), (10, 40), cv.CV_FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2, 8)
 
-    cam_server.set_jpeg(frame)
+    cam_server.set_jpeg(mask)
     if show_image:
         #scale = 1.48
         #frame = cv2.resize(frame, (int(RESOLUTION_X * (scale + 0.02)), int(RESOLUTION_Y * scale)), interpolation=cv2.INTER_CUBIC)
