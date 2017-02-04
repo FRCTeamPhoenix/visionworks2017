@@ -128,11 +128,10 @@ while rval:
 
     # remove noise
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (morph_kernel_width, morph_kernel_height))
-    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
-    
+    mask = cv2.erode(mask, kernel)
+
     # fuse details	
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (25, 25))
-    #mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
     mask = cv2.dilate(mask, kernel)    
 
     res = cv2.bitwise_and(frame, frame, mask=mask)
