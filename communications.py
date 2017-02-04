@@ -27,7 +27,7 @@ class States(Enum):
 
 __targeting_id__ = 'target_angle'
 
-# delimiter ( timestamp$DELIMETERvalue )
+
 __delimiter__ = ';'
 
 # return the current time (in a function so that the format can be changed if need be)
