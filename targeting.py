@@ -28,9 +28,9 @@ wait_time = config.WAIT_TIME
 start_frame = config.START_FRAME
 
 # controls (ascii)
-EXIT = config.GUI_EXIT_KEY
-CONTINUE = config.GUI_WAIT_FOR_CONTINUE_KEY
-
+exit_key = config.GUI_EXIT_KEY
+continue_key = config.GUI_WAIT_FOR_CONTINUE_KEY
+33
 # camera settings
 video_source = config.VIDEO_SOURCE
 live = True if isinstance(video_source, int) else False
@@ -42,16 +42,16 @@ thresh_low = config.THRESH_LOW
 thresh_high = config.THRESH_HIGH
 morph_kernel_width = config.MORPH_KERNEL_WIDTH
 morph_kernel_height = config.MORPH_KERNEL_HEIGHT
+poly_eps = config.POLY_EPS
 
 # experimentally determined camera (intrinsic) and distortion matrices
 mtx = config.CAMERA_MATRIX
 dist = config.CAMERA_DISTORTION_MATRIX
 
 max_norm_tvecs = config.MAX_NORM_TVECS
-min_norm_tvecs = config.min_norm_tvecs
-
+min_norm_tvecs = config.MIN_NORM_TVECS
 max_target_area = config.MAX_TARGET_AREA
-min_target_area = config.min_target_area
+min_target_area = config.MIN_TARGET_AREA
 
 
 # target camera matrix for undistortion
@@ -143,12 +143,12 @@ def gear_contours(contours):
         if best_area1 > 0 and best_area2 > 0:
             target = cv2.convexHull(np.concatenate((target1, target2)))
 
-        e = POLY_EPS * cv2.arcLength(target, True)
+        e = poly_eps * cv2.arcLength(target, True)
         target = cv2.approxPolyDP(target, e, True)
 
         if target is not None:
             correct_number_of_sides = len(target) == len(objp)
-            area_within_range = best_area > min_target_area and best_area < max_target_area
+            area_within_range = best_area1 > min_target_area and best_area2 < max_target_area
             target_within_bounds = True
             for p in target:
                 # note, array is double wrapped, that's why accessing x and y values here is weird
@@ -289,9 +289,9 @@ while rval:
         cv2.imshow('frame', frame)
     key = cv2.waitKey(wait_time)
     if wait_for_continue:
-        while key != EXIT and key != CONTINUE:
+        while key != exit_key and key != continue_key:
             key = cv2.waitKey(1)
-    if key == EXIT:  # exit on ESC
+    if key == exit_key:  # exit on ESC
         break
 
     # record time for fps calculation
