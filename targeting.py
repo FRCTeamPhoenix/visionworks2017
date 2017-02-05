@@ -12,7 +12,7 @@ import platform
 import math
 import logging
 import communications as comms
-from communications import States
+from communications import States, Modes
 import v4l2ctl
 import config
 import feed
@@ -38,11 +38,14 @@ res_x = config.RESOLUTION_X
 res_y = config.RESOLUTION_Y
 
 # image processing settings
-thresh_low = config.THRESH_LOW
-thresh_high = config.THRESH_HIGH
+shooter_thresh_low = config.SHOOTER_THRESH_LOW
+shooter_thresh_high = config.SHOOTER_THRESH_HIGH
+gear_thresh_low = config.GEAR_THRESH_LOW
+gear_thresh_high = config.GEAR_THRESH_HIGH
 morph_kernel_width = config.MORPH_KERNEL_WIDTH
 morph_kernel_height = config.MORPH_KERNEL_HEIGHT
 poly_eps = config.POLY_EPS
+rel_split_eps = config.RELATIVE_SPLIT_CONTOUR_EPSILON
 
 # experimentally determined camera (intrinsic) and distortion matrices
 mtx = config.CAMERA_MATRIX
@@ -50,8 +53,11 @@ dist = config.CAMERA_DISTORTION_MATRIX
 
 max_norm_tvecs = config.MAX_NORM_TVECS
 min_norm_tvecs = config.MIN_NORM_TVECS
-max_target_area = config.MAX_TARGET_AREA
-min_target_area = config.MIN_TARGET_AREA
+max_shooter_area = config.MAX_SHOOTER_AREA
+min_shooter_area = config.MIN_SHOOTER_AREA
+max_gears_area = config.MAX_GEARS_AREA
+min_gears_area = config.MIN_GEARS_AREA
+gears_objp = config.GEARS_OBJP
 
 
 # target camera matrix for undistortion
@@ -59,15 +65,6 @@ newcameramtx, roi=cv2.getOptimalNewCameraMatrix(mtx, dist, (res_x, res_y), 1, (r
 
 # pixels to degrees conversion factor
 ptd = config.CAMERA_DIAG_FOV / math.sqrt(math.pow(res_x, 2) + math.pow(res_y, 2))
-
-# gears object points
-gears_objp = np.array(
-    [0, 0, 0],
-    [0, 10.25, 0],
-    [5, 10.25, 0],
-    [5, 0, 0]
-)
-
 
 # initialize logging
 logging.basicConfig(stream=config.LOG_STREAM, level=config.LOG_LEVEL)
@@ -111,7 +108,6 @@ else:
 
     comms.set_state(States.CAMERA_ERROR)
 
-
 # estimates the pose of a target, returns rvecs and tvecs
 def estimate_pose(target):
     # fix array dimensions (aka unwrap the double wrapped array)
@@ -134,30 +130,30 @@ def gear_contours(contours):
     if len(contours) > 0:
         # find the polygon with the largest area
         # find the two biggest contours
-        best_area1 = 0
-        best_area2 = 0
-        target1 = None
-        target2 = None
+        areas = []
         for c in contours:
             area = cv2.contourArea(c)
-            if area > best_area1:
-                best_area2 = best_area1
-                target2 = target1
-                best_area1 = area
-                target1 = c
-            elif area > best_area2:
-                best_area2 = area
-                target2 = c
+            if area > min_gears_area and area < max_gears_area:
+                areas.append((area, c))
+        areas.sort(key=lambda x: -x[0])
 
-        if best_area1 > 0 and best_area2 > 0:
-            target = cv2.convexHull(np.concatenate((target1, target2)))
-
-        e = poly_eps * cv2.arcLength(target, True)
-        target = cv2.approxPolyDP(target, e, True)
+        target = None
+        if len(areas) == 2:
+            target = cv2.convexHull(np.concatenate((areas[0][1], areas[1][1])))
+        # if one of the sides is cut in half
+        elif len(areas) > 2:
+            half_area = areas[0][0] / 2
+            upper = half_area * (1 + rel_split_eps)
+            lower = half_area * (1 - rel_split_eps)
+            area1_within_bounds = areas[1][0] < upper and areas[1][0] > lower
+            area2_within_bounds = areas[2][0] < upper and areas[2][0] > lower
+            if area1_within_bounds and area2_within_bounds:
+                target = cv2.convexHull(np.concatenate((areas[0][1], areas[1][1], areas[2][1])))
 
         if target is not None:
+            e = poly_eps * cv2.arcLength(target, True)
+            target = cv2.approxPolyDP(target, e, True)
             correct_number_of_sides = len(target) == len(gears_objp)
-            area_within_range = best_area1 > min_target_area and best_area2 < max_target_area
             target_within_bounds = True
             for p in target:
                 # note, array is double wrapped, that's why accessing x and y values here is weird
@@ -165,17 +161,18 @@ def gear_contours(contours):
                     target_within_bounds = False
                     break
 
-            if correct_number_of_sides and area_within_range and target_within_bounds:
+            if correct_number_of_sides and target_within_bounds:
                 return target
     return None
 
-def gear_targeting(frame):
+def gear_targeting(hsv):
     # threshold
-    mask = cv2.inRange(hsv, thresh_low, thresh_high)
+    mask = cv2.inRange(hsv, gear_thresh_low, gear_thresh_high)
 
     # remove noise
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
     mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+    res = mask.copy()
 
     # get a list of continuous lines in the image
     contours, _ = cv2.findContours(mask, 1, 2)
@@ -185,7 +182,14 @@ def gear_targeting(frame):
 
     if target is not None:
         rvecs, tvecs = estimate_pose(target)
-        #comms
+        comms.set_gear(rvecs, tvecs)
+        if draw:
+            cv2.drawContours(frame, [target], 0, (0, 255, 0), 3)
+            # find the centroid of the target
+            M = cv2.moments(target)
+            cx = int(M['m10'] / M['m00'])
+            cy = int(M['m01'] / M['m00'])
+            cv2.drawContours(frame, [np.array([[cx, cy]])], 0, (0, 0, 255), 10)
     else:
         comms.set_state(States.TARGET_NOT_FOUND)
 
@@ -217,11 +221,13 @@ def shooter_contours(contours):
 
 def shooter_targeting(hsv):
     # threshold
-    mask = cv2.inRange(hsv, thresh_low, thresh_high)
+    mask = cv2.inRange(hsv, shooter_thresh_low, shooter_thresh_high)
+
 
     # remove noise
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
     mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+    res = mask.copy()
 
     # get a list of continuous lines in the image
     contours, _ = cv2.findContours(mask, 1, 2)
@@ -241,7 +247,7 @@ def shooter_targeting(hsv):
         angle = distance_from_center * ptd # pixel distance * conversion factor
 
         # send the angle to the RIO
-        comms.set_targeting(angle)
+        comms.set_high_goal(angle)
 
         # draw debug information about the target on the frame
         if draw:
@@ -255,6 +261,7 @@ def shooter_targeting(hsv):
 # vars for calculating fps
 frametimes = list()
 last = time.time()
+fps = 0
 
 cam_server.update()
 thread.start_new_thread(feed.init, (cam_server,))
@@ -278,7 +285,12 @@ while rval:
     # convert to hsv colorspace
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
-    gear_targeting(hsv)
+    #mode = comms.get_mode()
+    mode = Modes.GEARS
+    if mode == Modes.HIGH_GOAL:
+        shooter_targeting(hsv)
+    elif mode == Modes.GEARS:
+        gear_targeting(hsv)
 
     # calculate fps
     frametimes.append(time.time() - last)
@@ -294,8 +306,8 @@ while rval:
     if show_image:
         #scale = 1.48
         #frame = cv2.resize(frame, (int(RESOLUTION_X * (scale + 0.02)), int(RESOLUTION_Y * scale)), interpolation=cv2.INTER_CUBIC)
-        #cv2.imshow('res', res)
         cv2.imshow('frame', frame)
+
     key = cv2.waitKey(wait_time)
     if wait_for_continue:
         while key != exit_key and key != continue_key:
