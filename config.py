@@ -25,7 +25,7 @@ LOG_LEVEL = logging.DEBUG
 LOG_STREAM = sys.stdout
 
 # camera configuration
-VIDEO_SOURCE = 'output.avi' # can be a camera index or a filename
+VIDEO_SOURCE = 'gears.avi' # can be a camera index or a filename
 RESOLUTION_X = 640
 RESOLUTION_Y = 480
 CAMERA_V4L_SETTINGS = collections.OrderedDict([
@@ -48,7 +48,13 @@ THRESH_LOW = np.array([70, 100, 40])
 THRESH_HIGH = np.array([80, 255, 255])
 MORPH_KERNEL_WIDTH = 3
 MORPH_KERNEL_HEIGHT = 3
+POLY_EPS = 0.1
 
 # pose estimation
 MIN_NORM_TVECS = 0.0001
 MAX_NORM_TVECS = 1000
+
+######
+# please for the love of god change this
+MIN_TARGET_AREA = 0.003 * RESOLUTION_X * RESOLUTION_Y
+MAX_TARGET_AREA = 0.3 * RESOLUTION_X * RESOLUTION_Y
