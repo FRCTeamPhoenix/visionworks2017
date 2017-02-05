@@ -25,7 +25,7 @@ LOG_LEVEL = logging.DEBUG
 LOG_STREAM = sys.stdout
 
 # camera configuration
-VIDEO_SOURCE = 'gears.avi' # can be a camera index or a filename
+VIDEO_SOURCE = 'gears_target.avi' # can be a camera index or a filename
 RESOLUTION_X = 640
 RESOLUTION_Y = 480
 CAMERA_V4L_SETTINGS = collections.OrderedDict([

@@ -60,6 +60,15 @@ newcameramtx, roi=cv2.getOptimalNewCameraMatrix(mtx, dist, (res_x, res_y), 1, (r
 # pixels to degrees conversion factor
 ptd = config.CAMERA_DIAG_FOV / math.sqrt(math.pow(res_x, 2) + math.pow(res_y, 2))
 
+# gears object points
+gears_objp = np.array(
+    [0, 0, 0],
+    [0, 10.25, 0],
+    [5, 10.25, 0],
+    [5, 0, 0]
+)
+
+
 # initialize logging
 logging.basicConfig(stream=config.LOG_STREAM, level=config.LOG_LEVEL)
 log = logging.getLogger(__name__)
@@ -112,7 +121,7 @@ def estimate_pose(target):
     imgp = np.array(new, dtype=np.float64)
 
     # calculate rotation and translation matrices
-    _, rvecs, tvecs = cv2.solvePnP(objp, imgp, mtx, dist)
+    _, rvecs, tvecs = cv2.solvePnP(gears_objp, imgp, mtx, dist)
 
     if cv2.norm(np.array(tvecs)) < min_norm_tvecs or cv2.norm(np.array(tvecs)) > max_norm_tvecs:
         tvecs = None
@@ -147,7 +156,7 @@ def gear_contours(contours):
         target = cv2.approxPolyDP(target, e, True)
 
         if target is not None:
-            correct_number_of_sides = len(target) == len(objp)
+            correct_number_of_sides = len(target) == len(gears_objp)
             area_within_range = best_area1 > min_target_area and best_area2 < max_target_area
             target_within_bounds = True
             for p in target:
