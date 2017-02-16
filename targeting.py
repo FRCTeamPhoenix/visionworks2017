@@ -306,7 +306,9 @@ last = time.time()
 fps = 0
 
 cam_server.update()
-thread.start_new_thread(feed.init, (cam_server,))
+
+if config.USE_HTTP_SERVER:
+    thread.start_new_thread(feed.init, (cam_server,))
 
 log.info("Starting vision processing loop")
 # loop for as long as we're still getting images
