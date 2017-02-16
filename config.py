@@ -17,7 +17,7 @@ GUI_EXIT_KEY = 27
 GUI_WAIT_FOR_CONTINUE_KEY = 32
 
 # networktables constants
-NETWORKTABLES_SERVER = 'roboRIO-142-FRC.local'#'10.1.42.24'
+NETWORKTABLES_SERVER = '10.1.42.24'
 NETWORKTABLES_TABLE_NAME = 'datatable'
 
 # logging config
@@ -44,7 +44,7 @@ CAMERA_DISTORTION_MATRIX = np.array([[ 0.03236637, -0.03763916, -0.00569912, -0.
 CAMERA_DIAG_FOV = 83
 
 # processing tuning
-SHOOTER_THRESH_LOW = np.array([70, 100, 40])
+SHOOTER_THRESH_LOW = np.array([70, 100, 85])
 SHOOTER_THRESH_HIGH = np.array([80, 255, 255])
 GEAR_THRESH_LOW = np.array([70, 100, 100])
 GEAR_THRESH_HIGH = np.array([80, 255, 255])

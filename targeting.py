@@ -60,11 +60,12 @@ min_gears_area = config.MIN_GEARS_AREA
 gears_objp = config.GEARS_OBJP
 
 
-# target camera matrix for undistortion
+# target camera matrix for
 newcameramtx, roi=cv2.getOptimalNewCameraMatrix(mtx, dist, (res_x, res_y), 1, (res_x, res_y))
 
 # pixels to degrees conversion factor
 ptd = config.CAMERA_DIAG_FOV / math.sqrt(math.pow(res_x, 2) + math.pow(res_y, 2))
+print(ptd)
 
 # initialize logging
 logging.basicConfig(stream=config.LOG_STREAM, level=config.LOG_LEVEL)
@@ -182,6 +183,39 @@ def gear_targeting(hsv):
 
     if target is not None:
         rvecs, tvecs = estimate_pose(target)
+
+        #rvecs[0] *= -1
+        #rvecs[1] *= -1
+
+        cv2.putText(frame, str(tvecs[0]), (400, 350), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, 9)
+        cv2.putText(frame, str(tvecs[1]), (400, 400), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, 9)
+        cv2.putText(frame, str(tvecs[2]), (400, 450), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, 9)
+
+        angle = math.atan(tvecs[0] / tvecs[2]) / math.pi * 180
+        distance = math.sqrt((tvecs[0]**2) + (tvecs[2]**2))
+
+
+        R, _ = cv2.Rodrigues(rvecs)
+        sy = math.sqrt(R[0, 0] * R[0, 0] + R[1, 0] * R[1, 0])
+
+        singular = sy < 1e-6
+
+        if not singular:
+            x = math.atan2(R[2, 1], R[2, 2])
+            y = math.atan2(-R[2, 0], sy)
+            z = math.atan2(R[1, 0], R[0, 0])
+        else:
+            x = math.atan2(-R[1, 2], R[1, 1])
+            y = math.atan2(-R[2, 0], sy)
+            z = 0
+
+        #angle = -y / math.pi * 180
+        #angle = -z / math.pi * 180
+
+
+        cv2.putText(frame, str(angle), (10, 450), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, 9)
+        cv2.putText(frame, str(distance), (10, 400), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, 9)
+
         comms.set_gear(rvecs, tvecs)
         if draw:
             cv2.drawContours(frame, [target], 0, (0, 255, 0), 3)
@@ -189,6 +223,7 @@ def gear_targeting(hsv):
             M = cv2.moments(target)
             cx = int(M['m10'] / M['m00'])
             cy = int(M['m01'] / M['m00'])
+
             cv2.drawContours(frame, [np.array([[cx, cy]])], 0, (0, 0, 255), 10)
     else:
         comms.set_state(States.TARGET_NOT_FOUND)

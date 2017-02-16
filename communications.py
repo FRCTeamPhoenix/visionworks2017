@@ -37,7 +37,8 @@ __goal_id = 'high_goal'
 __goal_timestamp_id = 'high_goal_time'
 __gears_rvecs_id = 'gear_rvecs'
 __gears_tvecs_id = 'gear_tvecs'
-__gears_timestamp = 'gear_time'
+__gears_rvecs_timestamp = 'gear_rvecs_time'
+__gears_tvecs_timestamp = 'gear_tvecs_time'
 
 # return the current time (in a function so that the format can be changed if need be)
 def __time():
@@ -74,10 +75,12 @@ def set_gear(rvecs, tvecs):
     t = __time()
     __log_value(__gears_rvecs_id, rvecs)
     __log_value(__gears_tvecs_id, tvecs)
-    __log_value(__gears_timestamp, t)
+    __log_value(__gears_rvecs_timestamp, t)
+    __log_value(__gears_tvecs_timestamp, t)
     return __table.putNumberArray(__gears_rvecs_id, rvecs) & \
            __table.putNumberArray(__gears_tvecs_id, tvecs) & \
-           __table.putNumber(__gears_timestamp, t)
+           __table.putNumber(__gears_rvecs_timestamp, t) & \
+           __table.putNumber(__gears_tvecs_timestamp, t)
 
 def get_mode():
     if __mode_id in __table.getKeys():
