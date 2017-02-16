@@ -182,47 +182,54 @@ def gear_targeting(hsv):
     target = gear_contours(contours)
 
     if target is not None:
-        rvecs, tvecs = estimate_pose(target)
 
-        #rvecs[0] *= -1
-        #rvecs[1] *= -1
+        # rvecs, tvecs = estimate_pose(target)
+        #
+        # rvecs[0] *= -1
+        # rvecs[1] *= -1
+        #
+        # cv2.putText(frame, str(tvecs[0]), (400, 350), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, 9)
+        # cv2.putText(frame, str(tvecs[1]), (400, 400), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, 9)
+        # cv2.putText(frame, str(tvecs[2]), (400, 450), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, 9)
+        #
+        # angle = math.atan(tvecs[0] / tvecs[2]) / math.pi * 180
+        # distance = math.sqrt((tvecs[0]**2) + (tvecs[2]**2))
+        #
+        #
+        # R, _ = cv2.Rodrigues(rvecs)
+        # sy = math.sqrt(R[0, 0] * R[0, 0] + R[1, 0] * R[1, 0])
+        #
+        # singular = sy < 1e-6
+        #
+        # if not singular:
+        #     x = math.atan2(R[2, 1], R[2, 2])
+        #     y = math.atan2(-R[2, 0], sy)
+        #     z = math.atan2(R[1, 0], R[0, 0])
+        # else:
+        #     x = math.atan2(-R[1, 2], R[1, 1])
+        #     y = math.atan2(-R[2, 0], sy)
+        #     z = 0
+        #
+        # angle = -y / math.pi * 180
+        # angle = -z / math.pi * 180
+        #
+        #
+        # cv2.putText(frame, str(angle), (10, 450), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, 9)
+        # cv2.putText(frame, str(distance), (10, 400), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, 9)
 
-        cv2.putText(frame, str(tvecs[0]), (400, 350), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, 9)
-        cv2.putText(frame, str(tvecs[1]), (400, 400), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, 9)
-        cv2.putText(frame, str(tvecs[2]), (400, 450), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, 9)
+        M = cv2.moments(target)
+        cx = int(M['m10'] / M['m00'])
+        cy = int(M['m01'] / M['m00'])
 
-        angle = math.atan(tvecs[0] / tvecs[2]) / math.pi * 180
-        distance = math.sqrt((tvecs[0]**2) + (tvecs[2]**2))
+        # calculate the angle needed in order to align the target
+        distance_from_center = cx - (res_x / 2)
+        angle = distance_from_center * ptd  # pixel distance * conversion factor
 
-
-        R, _ = cv2.Rodrigues(rvecs)
-        sy = math.sqrt(R[0, 0] * R[0, 0] + R[1, 0] * R[1, 0])
-
-        singular = sy < 1e-6
-
-        if not singular:
-            x = math.atan2(R[2, 1], R[2, 2])
-            y = math.atan2(-R[2, 0], sy)
-            z = math.atan2(R[1, 0], R[0, 0])
-        else:
-            x = math.atan2(-R[1, 2], R[1, 1])
-            y = math.atan2(-R[2, 0], sy)
-            z = 0
-
-        #angle = -y / math.pi * 180
-        #angle = -z / math.pi * 180
-
-
-        cv2.putText(frame, str(angle), (10, 450), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, 9)
-        cv2.putText(frame, str(distance), (10, 400), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, 9)
-
-        comms.set_gear(rvecs, tvecs)
+        comms.set_gear(angle)
         if draw:
             cv2.drawContours(frame, [target], 0, (0, 255, 0), 3)
             # find the centroid of the target
-            M = cv2.moments(target)
-            cx = int(M['m10'] / M['m00'])
-            cy = int(M['m01'] / M['m00'])
+
 
             cv2.drawContours(frame, [np.array([[cx, cy]])], 0, (0, 0, 255), 10)
     else:

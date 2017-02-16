@@ -35,10 +35,10 @@ class Modes(Enum):
 
 __goal_id = 'high_goal'
 __goal_timestamp_id = 'high_goal_time'
-__gears_rvecs_id = 'gear_rvecs'
-__gears_tvecs_id = 'gear_tvecs'
-__gears_rvecs_timestamp = 'gear_rvecs_time'
-__gears_tvecs_timestamp = 'gear_tvecs_time'
+__gears_angle_id = 'gear_angle'
+__gears_distance_id = 'gear_distance'
+__gears_angle_timestamp = 'gear_angle_time'
+__gears_distance_timestamp = 'gear_distance_time'
 
 # return the current time (in a function so that the format can be changed if need be)
 def __time():
@@ -70,17 +70,13 @@ def set_high_goal(angle):
     return __table.putNumber(__goal_id, angle) & \
            __table.putNumber(__goal_timestamp_id, t)
 
-def set_gear(rvecs, tvecs):
-    log.debug('Sent gear rvecs %s', rvecs)
+def set_gear(angle):
+    log.debug('Sent gear angle %s', angle)
     t = __time()
-    __log_value(__gears_rvecs_id, rvecs)
-    __log_value(__gears_tvecs_id, tvecs)
-    __log_value(__gears_rvecs_timestamp, t)
-    __log_value(__gears_tvecs_timestamp, t)
-    return __table.putNumberArray(__gears_rvecs_id, rvecs) & \
-           __table.putNumberArray(__gears_tvecs_id, tvecs) & \
-           __table.putNumber(__gears_rvecs_timestamp, t) & \
-           __table.putNumber(__gears_tvecs_timestamp, t)
+    __log_value(__gears_angle_id, angle)
+    __log_value(__gears_angle_timestamp, t)
+    return __table.putNumber(__gears_angle_id, angle) & \
+           __table.putNumber(__gears_angle_timestamp, t)
 
 def get_mode():
     if __mode_id in __table.getKeys():
