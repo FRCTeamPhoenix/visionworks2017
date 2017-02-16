@@ -229,7 +229,7 @@ def gear_targeting(hsv):
         if draw:
             cv2.drawContours(frame, [target], 0, (0, 255, 0), 3)
             # find the centroid of the target
-
+            cv2.putText(frame, str(angle), (10, 450), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, 9)
 
             cv2.drawContours(frame, [np.array([[cx, cy]])], 0, (0, 0, 255), 10)
     else:
