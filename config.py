@@ -3,6 +3,20 @@ import sys
 import v4l2ctl
 import collections
 import numpy as np
+from enum import Enum
+
+class Modes(Enum):
+    HIGH_GOAL = 0
+    GEARS = 1
+    BOTH = 2
+    NOT_YET_SET = 3
+class States(Enum):
+    POWERED_ON = 0
+    CAMERA_ERROR = 1
+    TARGET_FOUND = 2
+    TARGET_NOT_FOUND = 3
+    POWERED_OFF = 4
+
 
 # General
 WAIT_TIME = 25 # wait time in the main loop
@@ -15,18 +29,33 @@ GUI_DEBUG_DRAW = True
 GUI_WAIT_FOR_CONTINUE = False
 GUI_EXIT_KEY = 27
 GUI_WAIT_FOR_CONTINUE_KEY = 32
-USE_HTTP_SERVER = True
 
-# networktables constants
+# HTTP configuration
+USE_HTTP_SERVER = True
+SERVER_MODE = Modes.HIGH_GOAL
+
+# communications/networktables
 NETWORKTABLES_SERVER = '10.1.42.24'
 NETWORKTABLES_TABLE_NAME = 'datatable'
+NETWORKTABLES_STATE_ID = 'jetson_state'
+NETWORKTABLES_STATE_TIMESTAMP_ID = 'jetson_state_time'
+NETWORKTABLES_MODE_ID = 'jetson_mode'
+NETWORKTABLES_GOAL_ID = 'high_goal'
+NETWORKTABLES_GOAL_TIMESTAMP_ID = 'high_goal_time'
+NETWORKTABLES_GEARS_ANGLE_ID = 'gear_angle'
+NETWORKTABLES_GEARS_DISTANCE_ID = 'gear_distance'
+NETWORKTABLES_GEARS_ANGLE_TIMESTAMP_ID = 'gear_angle_time'
+NETWORKTABLES_GEARS_DISTANCE_TIMESTAMP_ID = 'gear_distance_time'
 
 # logging config
 LOG_LEVEL = logging.DEBUG
 LOG_STREAM = sys.stdout
 
-# camera configuration
-VIDEO_SOURCE = 'gears_target.avi' # can be a camera index or a filename
+# camera configuration can be a camera index or a filename
+#   turret - /dev/video10
+#   gear - /dev/video11
+VIDEO_SOURCE_TURRET = 'output.avi'
+VIDEO_SOURCE_GEAR = 'gears_target.avi'
 RESOLUTION_X = 640
 RESOLUTION_Y = 480
 CAMERA_V4L_SETTINGS = collections.OrderedDict([

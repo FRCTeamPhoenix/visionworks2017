@@ -3,6 +3,7 @@ from enum import Enum
 import logging
 import time
 import config
+from config import States, Modes
 
 
 logging.basicConfig(stream=config.LOG_STREAM, level=config.LOG_LEVEL)
@@ -17,28 +18,7 @@ NetworkTables.initialize(__server_url)
 __table = NetworkTable.getTable(__table_name)
 
 # hardcoded key/values
-__state_id = 'jetson_state'
-__state_timestamp_id = 'jetson_state_time'
-class States(Enum):
-    POWERED_ON = 0
-    CAMERA_ERROR = 1
-    TARGET_FOUND = 2
-    TARGET_NOT_FOUND = 3
-    POWERED_OFF = 4
 
-__mode_id = 'jetson_mode'
-class Modes(Enum):
-    HIGH_GOAL = 0
-    GEARS = 1
-    BOTH = 2
-    NOT_YET_SET = 3
-
-__goal_id = 'high_goal'
-__goal_timestamp_id = 'high_goal_time'
-__gears_angle_id = 'gear_angle'
-__gears_distance_id = 'gear_distance'
-__gears_angle_timestamp = 'gear_angle_time'
-__gears_distance_timestamp = 'gear_distance_time'
 
 # return the current time (in a function so that the format can be changed if need be)
 def __time():
@@ -50,35 +30,35 @@ def __log_value(k, v):
 def set_state(state):
     assert isinstance(state, States), 'Value is not a valid jetson state'
     last = None
-    if __state_id in __table.getKeys():
-        last = __table.getNumber(__state_id)
+    if config.NETWORKTABLES_STATE_ID in __table.getKeys():
+        last = __table.getNumber(config.NETWORKTABLES_STATE_ID)
     if state.value != last:
         log.info('Set state %s', state.name)
         t = __time()
-        __log_value(__state_id, state.value)
-        __log_value(__state_timestamp_id, t)
-        return __table.putNumber(__state_id, state.value) & \
-               __table.putNumber(__state_timestamp_id, t)
+        __log_value(config.NETWORKTABLES_STATE_ID, state.value)
+        __log_value(config.NETWORKTABLES_STATE_TIMESTAMP_ID, t)
+        return __table.putNumber(config.NETWORKTABLES_STATE_ID, state.value) & \
+               __table.putNumber(config.NETWORKTABLES_STATE_TIMESTAMP_ID, t)
     else:
         return True
 
 def set_high_goal(angle):
     log.debug('Sent high goal angle %s', angle)
     t = __time()
-    __log_value(__goal_id, angle)
-    __log_value(__goal_timestamp_id, t)
-    return __table.putNumber(__goal_id, angle) & \
-           __table.putNumber(__goal_timestamp_id, t)
+    __log_value(config.NETWORKTABLES_GOAL_ID, angle)
+    __log_value(config.NETWORKTABLES_GOAL_TIMESTAMP_ID, t)
+    return __table.putNumber(config.NETWORKTABLES_GOAL_ID, angle) & \
+           __table.putNumber(config.NETWORKTABLES_GOAL_TIMESTAMP_ID, t)
 
 def set_gear(angle):
     log.debug('Sent gear angle %s', angle)
     t = __time()
-    __log_value(__gears_angle_id, angle)
-    __log_value(__gears_angle_timestamp, t)
-    return __table.putNumber(__gears_angle_id, angle) & \
-           __table.putNumber(__gears_angle_timestamp, t)
+    __log_value(config.NETWORKTABLES_GEARS_ANGLE_ID, angle)
+    __log_value(config.NETWORKTABLES_GEARS_ANGLE_TIMESTAMP_ID, t)
+    return __table.putNumber(config.NETWORKTABLES_GEARS_ANGLE_ID, angle) & \
+           __table.putNumber(config.NETWORKTABLES_GEARS_ANGLE_TIMESTAMP_ID, t)
 
 def get_mode():
-    if __mode_id in __table.getKeys():
-        return __table.getNumber(__mode_id)
+    if config.NETWORKTABLES_MODE_ID in __table.getKeys():
+        return __table.getNumber(config.NETWORKTABLES_MODE_ID)
     return Modes.NOT_YET_SET

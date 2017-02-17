@@ -12,9 +12,9 @@ import platform
 import math
 import logging
 import communications as comms
-from communications import States, Modes
 import v4l2ctl
 import config
+from config import Modes, States
 import feed
 import thread
 from capture import Capture
@@ -30,10 +30,8 @@ start_frame = config.START_FRAME
 # controls (ascii)
 exit_key = config.GUI_EXIT_KEY
 continue_key = config.GUI_WAIT_FOR_CONTINUE_KEY
-33
+
 # camera settings
-video_source = config.VIDEO_SOURCE
-live = True if isinstance(video_source, int) else False
 res_x = config.RESOLUTION_X
 res_y = config.RESOLUTION_Y
 
@@ -76,38 +74,8 @@ log.info('OpenCV %s', cv2.__version__)
 comms.set_state(States.POWERED_ON)
 
 # capture init
-cam_server = Capture()
-cap = cam_server.video
-log.info('Loaded capture from %s', video_source)
-
-# set the resolution
-cap.set(cv.CV_CAP_PROP_FRAME_WIDTH, res_x)
-cap.set(cv.CV_CAP_PROP_FRAME_HEIGHT, res_y)
-log.info("Set resolution to %sx%s", res_x, res_y)
-
-# find out if the camera is actually working
-if cap.isOpened():
-    rval, frame = cap.read()
-
-    # run some configuration if everything is good
-    if rval:
-        log.info("Read from capture successfully")
-        # run config using v4l2 driver if the platform is linux and the feed is live
-        if platform.system() == "Linux" and live:
-            log.info("Running Linux config using v4l2ctl")
-            v4l2ctl.restore_defaults(video_source)
-            for prop in config.CAMERA_V4L_SETTINGS:
-                v4l2ctl.set(video_source, prop, config.CAMERA_V4L_SETTINGS[prop])
-    else:
-        rval = False
-        log.critical("Problem reading from capture")
-        comms.set_state(States.CAMERA_ERROR)
-
-else:
-    rval = False
-    log.critical("Problem opening capture")
-
-    comms.set_state(States.CAMERA_ERROR)
+cam_server_turret = Capture(config.VIDEO_SOURCE_TURRET)
+cam_server_gear = Capture(config.VIDEO_SOURCE_GEAR)
 
 # estimates the pose of a target, returns rvecs and tvecs
 def estimate_pose(target):
@@ -299,25 +267,7 @@ def shooter_targeting(hsv):
     else:
         comms.set_state(States.TARGET_NOT_FOUND)
 
-
-# vars for calculating fps
-frametimes = list()
-last = time.time()
-fps = 0
-
-cam_server.update()
-
-if config.USE_HTTP_SERVER:
-    thread.start_new_thread(feed.init, (cam_server,))
-
-log.info("Starting vision processing loop")
-# loop for as long as we're still getting images
-while rval:
-
-    # read the frame
-    cam_server.update()
-    rval, frame = cam_server.rval, cam_server.frame
-
+def basic_frame_process(frame):
     # undistort the image
     dst = cv2.undistort(frame, mtx, dist, None, newcameramtx)
 
@@ -327,14 +277,49 @@ while rval:
     frame = dst
 
     # convert to hsv colorspace
-    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+    return cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
+
+# vars for calculating fps
+frametimes = list()
+last = time.time()
+fps = 0
+
+
+if config.SERVER_MODE == Modes.HIGH_GOAL:
+    feed_cam_server = cam_server_turret
+else:
+    feed_cam_server = cam_server_gear
+if config.USE_HTTP_SERVER:
+    thread.start_new_thread(feed.init, (feed_cam_server,))
+
+log.info("Starting vision processing loop")
+# loop for as long as we're still getting images
+while True:
     #mode = comms.get_mode()
-    mode = Modes.GEARS
-    if mode == Modes.HIGH_GOAL:
+    mode = Modes.HIGH_GOAL
+    if mode == Modes.NOT_YET_SET:
+        continue
+
+    if cam_server_turret.rval and (mode == Modes.HIGH_GOAL or mode == Modes.BOTH):
+        cam_server_turret.update()
+        rval, frame = cam_server_turret.rval, cam_server_turret.frame
+        hsv = basic_frame_process(frame)
         shooter_targeting(hsv)
-    elif mode == Modes.GEARS:
+        if draw:
+            cv2.putText(frame, str(fps), (10, 40), cv.CV_FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2, 8)
+        if config.USE_HTTP_SERVER:
+            cam_server_turret.set_jpeg(frame)
+
+    if cam_server_gear.rval and (mode == Modes.GEARS or mode == Modes.BOTH):
+        cam_server_gear.update()
+        rval, frame = cam_server_gear.rval, cam_server_gear.frame
+        hsv = basic_frame_process(frame)
         gear_targeting(hsv)
+        if draw:
+            cv2.putText(frame, str(fps), (10, 40), cv.CV_FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2, 8)
+        if config.USE_HTTP_SERVER:
+            cam_server_gear.set_jpeg(frame)
 
     # calculate fps
     frametimes.append(time.time() - last)
@@ -342,11 +327,6 @@ while rval:
         frametimes.pop(0)
     fps = int(1 / (sum(frametimes) / len(frametimes)))
 
-    # draw fps
-    if draw:
-        cv2.putText(frame, str(fps), (10, 40), cv.CV_FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2, 8)
-
-    cam_server.set_jpeg(frame)
     if show_image:
         #scale = 1.48
         #frame = cv2.resize(frame, (int(RESOLUTION_X * (scale + 0.02)), int(RESOLUTION_Y * scale)), interpolation=cv2.INTER_CUBIC)
