@@ -228,8 +228,8 @@ log.info("Starting vision processing loop")
 while True:
 
     try:
-        #mode = comms.get_mode()
-        mode = Modes.HIGH_GOAL
+        mode = comms.get_mode()
+        #mode = Modes.HIGH_GOAL
         if mode == Modes.NOT_YET_SET:
             continue
 
