@@ -1,18 +1,10 @@
-# TODO
-#   - Consider implementing minimum/maximum areas
-#   - Check to see if the two contours are close enough to each other?
-#   - Evaluate behaviour when the target is far away enough that there is only 1 contour
-
-
 import cv2
 from cv2 import cv
 import time
 import numpy as np
-import platform
 import math
 import logging
 import communications as comms
-import v4l2ctl
 import config
 from config import Modes, States
 import feed
@@ -63,7 +55,6 @@ newcameramtx, roi=cv2.getOptimalNewCameraMatrix(mtx, dist, (res_x, res_y), 1, (r
 
 # pixels to degrees conversion factor
 ptd = config.CAMERA_DIAG_FOV / math.sqrt(math.pow(res_x, 2) + math.pow(res_y, 2))
-print(ptd)
 
 # initialize logging
 logging.basicConfig(stream=config.LOG_STREAM, level=config.LOG_LEVEL)
@@ -74,28 +65,24 @@ log.info('OpenCV %s', cv2.__version__)
 comms.set_state(States.POWERED_ON)
 
 # capture init
-cam_server_turret = Capture(config.VIDEO_SOURCE_TURRET)
-cam_server_gear = Capture(config.VIDEO_SOURCE_GEAR)
+turret_cam_server = Capture(config.VIDEO_SOURCE_TURRET)
+gear_cam_server = Capture(config.VIDEO_SOURCE_GEAR)
 
-# estimates the pose of a target, returns rvecs and tvecs
-def estimate_pose(target):
-    # fix array dimensions (aka unwrap the double wrapped array)
-    new = []
-    for r in target:
-        new.append([r[0][0], r[0][1]])
-    imgp = np.array(new, dtype=np.float64)
 
-    # calculate rotation and translation matrices
-    _, rvecs, tvecs = cv2.solvePnP(gears_objp, imgp, mtx, dist)
+def gear_targeting(hsv):
+    # threshold
+    mask = cv2.inRange(hsv, gear_thresh_low, gear_thresh_high)
 
-    if cv2.norm(np.array(tvecs)) < min_norm_tvecs or cv2.norm(np.array(tvecs)) > max_norm_tvecs:
-        tvecs = None
-    if math.isnan(rvecs[0]):
-        rvecs = None
-    return rvecs, tvecs
+    # remove noise
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+    res = mask.copy()
 
-# finds the target in a list of contours, returns a matrix with the target polygon
-def gear_contours(contours):
+    # get a list of continuous lines in the image
+    contours, _ = cv2.findContours(mask, 1, 2)
+
+    # identify the target in the image
+    target = None
     if len(contours) > 0:
         # find the polygon with the largest area
         # find the two biggest contours
@@ -106,9 +93,9 @@ def gear_contours(contours):
                 areas.append((area, c))
         areas.sort(key=lambda x: -x[0])
 
-        target = None
         if len(areas) == 2:
             target = cv2.convexHull(np.concatenate((areas[0][1], areas[1][1])))
+
         # if one of the sides is cut in half
         elif len(areas) > 2:
             half_area = areas[0][0] / 2
@@ -130,61 +117,10 @@ def gear_contours(contours):
                     target_within_bounds = False
                     break
 
-            if correct_number_of_sides and target_within_bounds:
-                return target
-    return None
-
-def gear_targeting(hsv):
-    # threshold
-    mask = cv2.inRange(hsv, gear_thresh_low, gear_thresh_high)
-
-    # remove noise
-    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
-    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
-    res = mask.copy()
-
-    # get a list of continuous lines in the image
-    contours, _ = cv2.findContours(mask, 1, 2)
-
-    # there's only a target if there's 2+ contours
-    target = gear_contours(contours)
+            if not correct_number_of_sides or not target_within_bounds:
+                target = None
 
     if target is not None:
-
-        # rvecs, tvecs = estimate_pose(target)
-        #
-        # rvecs[0] *= -1
-        # rvecs[1] *= -1
-        #
-        # cv2.putText(frame, str(tvecs[0]), (400, 350), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, 9)
-        # cv2.putText(frame, str(tvecs[1]), (400, 400), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, 9)
-        # cv2.putText(frame, str(tvecs[2]), (400, 450), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, 9)
-        #
-        # angle = math.atan(tvecs[0] / tvecs[2]) / math.pi * 180
-        # distance = math.sqrt((tvecs[0]**2) + (tvecs[2]**2))
-        #
-        #
-        # R, _ = cv2.Rodrigues(rvecs)
-        # sy = math.sqrt(R[0, 0] * R[0, 0] + R[1, 0] * R[1, 0])
-        #
-        # singular = sy < 1e-6
-        #
-        # if not singular:
-        #     x = math.atan2(R[2, 1], R[2, 2])
-        #     y = math.atan2(-R[2, 0], sy)
-        #     z = math.atan2(R[1, 0], R[0, 0])
-        # else:
-        #     x = math.atan2(-R[1, 2], R[1, 1])
-        #     y = math.atan2(-R[2, 0], sy)
-        #     z = 0
-        #
-        # angle = -y / math.pi * 180
-        # angle = -z / math.pi * 180
-        #
-        #
-        # cv2.putText(frame, str(angle), (10, 450), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, 9)
-        # cv2.putText(frame, str(distance), (10, 400), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, 9)
-
         M = cv2.moments(target)
         cx = int(M['m10'] / M['m00'])
         cy = int(M['m01'] / M['m00'])
@@ -203,8 +139,21 @@ def gear_targeting(hsv):
     else:
         comms.set_state(States.TARGET_NOT_FOUND)
 
-def shooter_contours(contours):
-    # there's only a target if there's 2+ contours
+
+def high_goal_targeting(hsv):
+    # threshold
+    mask = cv2.inRange(hsv, shooter_thresh_low, shooter_thresh_high)
+
+
+    # remove noise
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+    res = mask.copy()
+
+    # get a list of continuous lines in the image
+    contours, _ = cv2.findContours(mask, 1, 2)
+
+    # identify the target if there is one
     target = None
     if len(contours) > 0:
         # find the two biggest contours
@@ -224,25 +173,10 @@ def shooter_contours(contours):
                 target2 = c
         target = target1
 
-	if best_area1 > 0 and best_area2 > 0:
-            target = cv2.convexHull(np.concatenate((target1, target2)))
+    if best_area1 > 0 and best_area2 > 0:
+        target = cv2.convexHull(np.concatenate((target1, target2)))
 
-    return target
-
-def shooter_targeting(hsv):
-    # threshold
-    mask = cv2.inRange(hsv, shooter_thresh_low, shooter_thresh_high)
-
-
-    # remove noise
-    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
-    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
-    res = mask.copy()
-
-    # get a list of continuous lines in the image
-    contours, _ = cv2.findContours(mask, 1, 2)
-
-    target = shooter_contours(contours)
+    # if we found a target
     if target is not None:
         # set state
         comms.set_state(States.TARGET_FOUND)
@@ -267,6 +201,7 @@ def shooter_targeting(hsv):
     else:
         comms.set_state(States.TARGET_NOT_FOUND)
 
+
 def basic_frame_process(frame):
     # undistort the image
     dst = cv2.undistort(frame, mtx, dist, None, newcameramtx)
@@ -285,62 +220,62 @@ frametimes = list()
 last = time.time()
 fps = 0
 
-
-if config.SERVER_MODE == Modes.HIGH_GOAL:
-    feed_cam_server = cam_server_turret
-else:
-    feed_cam_server = cam_server_gear
 if config.USE_HTTP_SERVER:
-    thread.start_new_thread(feed.init, (feed_cam_server,))
+    thread.start_new_thread(feed.init, (turret_cam_server if config.SERVER_MODE == Modes.HIGH_GOAL else gear_cam_server,))
 
 log.info("Starting vision processing loop")
 # loop for as long as we're still getting images
 while True:
-    #mode = comms.get_mode()
-    mode = Modes.HIGH_GOAL
-    if mode == Modes.NOT_YET_SET:
-        continue
 
-    if cam_server_turret.rval and (mode == Modes.HIGH_GOAL or mode == Modes.BOTH):
-        cam_server_turret.update()
-        rval, frame = cam_server_turret.rval, cam_server_turret.frame
-        hsv = basic_frame_process(frame)
-        shooter_targeting(hsv)
-        if draw:
-            cv2.putText(frame, str(fps), (10, 40), cv.CV_FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2, 8)
-        if config.USE_HTTP_SERVER:
-            cam_server_turret.set_jpeg(frame)
+    try:
+        #mode = comms.get_mode()
+        mode = Modes.HIGH_GOAL
+        if mode == Modes.NOT_YET_SET:
+            continue
 
-    if cam_server_gear.rval and (mode == Modes.GEARS or mode == Modes.BOTH):
-        cam_server_gear.update()
-        rval, frame = cam_server_gear.rval, cam_server_gear.frame
-        hsv = basic_frame_process(frame)
-        gear_targeting(hsv)
-        if draw:
-            cv2.putText(frame, str(fps), (10, 40), cv.CV_FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2, 8)
-        if config.USE_HTTP_SERVER:
-            cam_server_gear.set_jpeg(frame)
+        if turret_cam_server.rval and (mode == Modes.HIGH_GOAL or mode == Modes.BOTH):
+            turret_cam_server.update()
+            rval, frame = turret_cam_server.rval, turret_cam_server.frame
+            hsv = basic_frame_process(frame)
+            high_goal_targeting(hsv)
+            if draw:
+                cv2.putText(frame, str(fps), (10, 40), cv.CV_FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2, 8)
+            if config.USE_HTTP_SERVER:
+                turret_cam_server.set_jpeg(frame)
 
-    # calculate fps
-    frametimes.append(time.time() - last)
-    if len(frametimes) > 60:
-        frametimes.pop(0)
-    fps = int(1 / (sum(frametimes) / len(frametimes)))
+        if gear_cam_server.rval and (mode == Modes.GEARS or mode == Modes.BOTH):
+            gear_cam_server.update()
+            rval, frame = gear_cam_server.rval, gear_cam_server.frame
+            hsv = basic_frame_process(frame)
+            gear_targeting(hsv)
+            if draw:
+                cv2.putText(frame, str(fps), (10, 40), cv.CV_FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2, 8)
+            if config.USE_HTTP_SERVER:
+                gear_cam_server.set_jpeg(frame)
 
-    if show_image:
-        #scale = 1.48
-        #frame = cv2.resize(frame, (int(RESOLUTION_X * (scale + 0.02)), int(RESOLUTION_Y * scale)), interpolation=cv2.INTER_CUBIC)
-        cv2.imshow('frame', frame)
+        # calculate fps
+        frametimes.append(time.time() - last)
+        if len(frametimes) > 60:
+            frametimes.pop(0)
+        fps = int(1 / (sum(frametimes) / len(frametimes)))
 
-    key = cv2.waitKey(wait_time)
-    if wait_for_continue:
-        while key != exit_key and key != continue_key:
-            key = cv2.waitKey(1)
-    if key == exit_key:  # exit on ESC
-        break
+        if show_image:
+            cv2.imshow('frame', frame)
 
-    # record time for fps calculation
-    last = time.time()
+        key = cv2.waitKey(wait_time)
+        if wait_for_continue:
+            while key != exit_key and key != continue_key:
+                key = cv2.waitKey(1)
+        if key == exit_key:  # exit on ESC
+            break
+
+        # record time for fps calculation
+        last = time.time()
+
+    except Exception:
+        # in real life situations on the field, we want to continue even if something goes really wrong.
+        # just keep looping :)
+        pass
 
 comms.set_state(States.POWERED_OFF)
 log.info("Main loop exited successfully")

@@ -4,6 +4,7 @@ import v4l2ctl
 import collections
 import numpy as np
 from enum import Enum
+from datetime import datetime
 
 class Modes(Enum):
     HIGH_GOAL = 0
@@ -24,8 +25,8 @@ START_FRAME = 0 # for video replays
 
 
 # GUI configuration
-GUI_SHOW = True
-GUI_DEBUG_DRAW = True
+GUI_SHOW = False
+GUI_DEBUG_DRAW = False
 GUI_WAIT_FOR_CONTINUE = False
 GUI_EXIT_KEY = 27
 GUI_WAIT_FOR_CONTINUE_KEY = 32
@@ -35,7 +36,7 @@ USE_HTTP_SERVER = True
 SERVER_MODE = Modes.HIGH_GOAL
 
 # communications/networktables
-NETWORKTABLES_SERVER = '10.1.42.24'
+NETWORKTABLES_SERVER = 'roboRIO-2342-FRC.local'
 NETWORKTABLES_TABLE_NAME = 'datatable'
 NETWORKTABLES_STATE_ID = 'jetson_state'
 NETWORKTABLES_STATE_TIMESTAMP_ID = 'jetson_state_time'
@@ -48,14 +49,18 @@ NETWORKTABLES_GEARS_ANGLE_TIMESTAMP_ID = 'gear_angle_time'
 NETWORKTABLES_GEARS_DISTANCE_TIMESTAMP_ID = 'gear_distance_time'
 
 # logging config
-LOG_LEVEL = logging.DEBUG
-LOG_STREAM = sys.stdout
+LOG_LEVEL = logging.INFO
+
+filename = datetime.now().strftime('%Y%m%d-%H:%M') + '.log'
+LOG_STREAM = open(filename, 'w+')
+sys.stdout = LOG_STREAM
+sys.stderr = LOG_STREAM
 
 # camera configuration can be a camera index or a filename
 #   turret - /dev/video10
 #   gear - /dev/video11
-VIDEO_SOURCE_TURRET = 'output.avi'
-VIDEO_SOURCE_GEAR = 'gears_target.avi'
+VIDEO_SOURCE_TURRET = 10
+VIDEO_SOURCE_GEAR = 11
 RESOLUTION_X = 640
 RESOLUTION_Y = 480
 CAMERA_V4L_SETTINGS = collections.OrderedDict([
