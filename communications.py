@@ -61,4 +61,4 @@ def set_gear(angle):
 def get_mode():
     if config.NETWORKTABLES_MODE_ID in __table.getKeys():
         return __table.getNumber(config.NETWORKTABLES_MODE_ID)
-    return Modes.NOT_YET_SET
+    return Modes.HIGH_GOAL
