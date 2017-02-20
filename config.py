@@ -26,7 +26,7 @@ START_FRAME = 0 # for video replays
 
 # GUI configuration
 GUI_SHOW = False
-GUI_DEBUG_DRAW = False
+GUI_DEBUG_DRAW = True
 GUI_WAIT_FOR_CONTINUE = False
 GUI_EXIT_KEY = 27
 GUI_WAIT_FOR_CONTINUE_KEY = 32

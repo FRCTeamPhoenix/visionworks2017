@@ -187,7 +187,7 @@ def high_goal_targeting(hsv):
         cy = int(M['m01'] / M['m00'])
 
         # calculate the angle needed in order to align the target
-        distance_from_center = cx - (res_x / 2)
+        distance_from_center = (res_x / 2) - cx
         angle = distance_from_center * ptd # pixel distance * conversion factor
 
         # send the angle to the RIO
