@@ -60,6 +60,7 @@ sys.stderr = LOG_STREAM
 # camera configuration can be a camera index or a filename
 #   turret - /dev/video10
 #   gear - /dev/video11
+#   configured under /etc/udev/rules.d/name-video-devices.rules on both jetsons
 VIDEO_SOURCE_TURRET = 10
 VIDEO_SOURCE_GEAR = 11
 RESOLUTION_X = 640
