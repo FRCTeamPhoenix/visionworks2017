@@ -17,15 +17,14 @@ __table_name = config.NETWORKTABLES_TABLE_NAME
 NetworkTables.initialize(__server_url)
 __table = NetworkTable.getTable(__table_name)
 
-# hardcoded key/values
-
-
 # return the current time (in a function so that the format can be changed if need be)
 def __time():
     return int(time.time() * 1000)
 
+
 def __log_value(k, v):
     log.debug('Sent value %s to %s', v, k)
+
 
 def set_state(state):
     assert isinstance(state, States), 'Value is not a valid jetson state'
@@ -42,6 +41,7 @@ def set_state(state):
     else:
         return True
 
+
 def set_high_goal(angle):
     log.debug('Sent high goal angle %s', angle)
     t = __time()
@@ -50,6 +50,13 @@ def set_high_goal(angle):
     return __table.putNumber(config.NETWORKTABLES_GOAL_ID, angle) & \
            __table.putNumber(config.NETWORKTABLES_GOAL_TIMESTAMP_ID, t)
 
+
+def get_turret_angle():
+    if config.NETWORKTABLES_TURRET_ANGLE_ID in __table.getKeys():
+        return __table.getNumber(config.NETWORKTABLES_TURRET_ANGLE_ID)
+    return None
+
+
 def set_gear(angle):
     log.debug('Sent gear angle %s', angle)
     t = __time()
@@ -57,6 +64,7 @@ def set_gear(angle):
     __log_value(config.NETWORKTABLES_GEARS_ANGLE_TIMESTAMP_ID, t)
     return __table.putNumber(config.NETWORKTABLES_GEARS_ANGLE_ID, angle) & \
            __table.putNumber(config.NETWORKTABLES_GEARS_ANGLE_TIMESTAMP_ID, t)
+
 
 def get_mode():
     if config.NETWORKTABLES_MODE_ID in __table.getKeys():

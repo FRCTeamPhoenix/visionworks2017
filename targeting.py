@@ -140,7 +140,7 @@ def gear_targeting(hsv):
         comms.set_state(States.TARGET_NOT_FOUND)
 
 
-def high_goal_targeting(hsv):
+def high_goal_targeting(hsv, turret_angle):
     # threshold
     mask = cv2.inRange(hsv, shooter_thresh_low, shooter_thresh_high)
 
@@ -190,8 +190,8 @@ def high_goal_targeting(hsv):
         distance_from_center = (res_x / 2) - cx
         angle = distance_from_center * ptd # pixel distance * conversion factor
 
-        # send the angle to the RIO
-        comms.set_high_goal(angle)
+        # send the (absolute) angle to the RIO
+        comms.set_high_goal(turret_angle + angle)
 
         # draw debug information about the target on the frame
         if draw:
@@ -235,9 +235,11 @@ while True:
 
         if turret_cam_server.rval and (mode == Modes.HIGH_GOAL or mode == Modes.BOTH):
             turret_cam_server.update()
+            turret_angle = comms.get_turret_angle()
             rval, frame = turret_cam_server.rval, turret_cam_server.frame
-            hsv = basic_frame_process(frame)
-            high_goal_targeting(hsv)
+            if turret_angle:
+                hsv = basic_frame_process(frame)
+                high_goal_targeting(hsv, turret_angle)
             if draw:
                 cv2.putText(frame, str(fps), (10, 40), cv.CV_FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2, 8)
             if config.USE_HTTP_SERVER:
