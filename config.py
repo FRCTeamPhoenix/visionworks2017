@@ -61,8 +61,24 @@ sys.stderr = LOG_STREAM
 #   turret - /dev/video10
 #   gear - /dev/video11
 #   configured under /etc/udev/rules.d/name-video-devices.rules on both jetsons
-VIDEO_SOURCE_TURRET = 10
-VIDEO_SOURCE_GEAR = 11
+def path_to_index(path):
+    import subprocess
+    import os
+    import re
+
+    if os.path.exists(path):
+        cmd = "udevadm info " + path
+        process = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE)
+        out = process.communicate()[0].split('\n')
+        dev_path = '/sys' + out[7].split('=')[1]
+        for root, dirs, files in os.walk(dev_path):
+            m = re.search('\'video[0-9]\'', str(dirs))
+            if m:
+                return int(m.group(0)[-2])
+    return None
+
+VIDEO_SOURCE_TURRET = path_to_index('/dev/turret_cam')
+VIDEO_SOURCE_GEAR = path_to_index('/dev/gear_cam')
 RESOLUTION_X = 640
 RESOLUTION_Y = 480
 CAMERA_V4L_SETTINGS = collections.OrderedDict([
