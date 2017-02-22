@@ -274,10 +274,10 @@ while True:
         # record time for fps calculation
         last = time.time()
 
-    except Exception:
+    except Exception as e:
         # in real life situations on the field, we want to continue even if something goes really wrong.
         # just keep looping :)
-        pass
+        print(e)
 
 comms.set_state(States.POWERED_OFF)
 log.info("Main loop exited successfully")

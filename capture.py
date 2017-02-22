@@ -53,10 +53,15 @@ class Capture(object):
                     log.info("Read from capture successfully")
                     # run config using v4l2 driver if the platform is linux and the feed is live
                     if platform.system() == "Linux" and self.live:
-                        log.info("Running Linux config using v4l2ctl")
-                        v4l2ctl.restore_defaults(self.source)
-                        for prop in config.CAMERA_V4L_SETTINGS:
-                            v4l2ctl.set(self.source, prop, config.CAMERA_V4L_SETTINGS[prop])
+                        try:
+                            log.info("Running Linux config using v4l2ctl")
+                            v4l2ctl.restore_defaults(self.source)
+                            for prop in config.CAMERA_V4L_SETTINGS:
+                                v4l2ctl.set(self.source, prop, config.CAMERA_V4L_SETTINGS[prop])
+                        except AttributeError as e:
+                            log.error('Setting camera properties failed!')
+                            comms.set_state(States.CAMERA_ERROR)
+                            print(e)
                 else:
                     self.rval = False
                     log.critical("Problem reading from capture")
