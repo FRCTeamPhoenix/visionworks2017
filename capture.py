@@ -37,7 +37,7 @@ class Capture(object):
         # video stream.
 
     def set_jpeg(self, frame):
-        self.jpeg = cv2.imencode('.jpg', frame)[1].tobytes()
+        self.jpeg = cv2.imencode('.jpg', frame)[1].tostring()
 
     def __configure(self):
         if self.rval:
