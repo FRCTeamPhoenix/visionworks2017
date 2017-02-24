@@ -55,6 +55,7 @@ newcameramtx, roi=cv2.getOptimalNewCameraMatrix(mtx, dist, (res_x, res_y), 1, (r
 
 # pixels to degrees conversion factor
 ptd = config.CAMERA_DIAG_FOV / math.sqrt(math.pow(res_x, 2) + math.pow(res_y, 2))
+focal_length = math.sqrt(res_x**2 + res_y**2) / 2 / math.tan(0.5 * config.CAMERA_DIAG_FOV * math.pi / 180)
 
 # initialize logging
 logging.basicConfig(stream=config.LOG_STREAM, level=config.LOG_LEVEL)
@@ -125,6 +126,9 @@ def gear_targeting(hsv):
         # set state
         comms.set_gear_state(States.TARGET_FOUND)
 
+        area = cv2.contourArea(target)
+        distance = focal_length * math.sqrt(config.STEAMWORKS_GEAR_GOAL_AREA / area)
+
         M = cv2.moments(target)
         cx = int(M['m10'] / M['m00'])
         cy = int(M['m01'] / M['m00'])
@@ -133,10 +137,11 @@ def gear_targeting(hsv):
         distance_from_center = cx - (res_x / 2)
         angle = distance_from_center * ptd  # pixel distance * conversion factor
 
-        comms.set_gear(angle)
+        comms.set_gear(angle, distance)
         if draw:
             cv2.drawContours(frame, [target], 0, (0, 255, 0), 3)
             # find the centroid of the target
+            cv2.putText(frame, str(distance), (10, 410), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, 9)
             cv2.putText(frame, str(angle), (10, 450), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, 9)
 
             cv2.drawContours(frame, [np.array([[cx, cy]])], 0, (0, 0, 255), 10)

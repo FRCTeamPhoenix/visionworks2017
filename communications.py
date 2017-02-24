@@ -46,7 +46,7 @@ def set_gear_state(state):
     assert isinstance(state, States), 'Value is not a valid jetson state'
     last = None
     if config.NETWORKTABLES_GEAR_STATE_ID in __table.getKeys():
-        last = __table.getNumber(config.NETWORKTABLES_GEAR_ID)
+        last = __table.getNumber(config.NETWORKTABLES_GEAR_STATE_ID)
     if state.value != last:
         log.info('Set state %s', state.name)
         t = __time()
@@ -73,13 +73,18 @@ def get_turret_angle():
     return None
 
 
-def set_gear(angle):
+def set_gear(angle, distance):
     log.debug('Sent gear angle %s', angle)
+    log.debug('Sent gear distance %s', distance)
     t = __time()
     __log_value(config.NETWORKTABLES_GEARS_ANGLE_ID, angle)
     __log_value(config.NETWORKTABLES_GEARS_ANGLE_TIMESTAMP_ID, t)
+    __log_value(config.NETWORKTABLES_GEARS_DISTANCE_ID, distance)
+    __log_value(config.NETWORKTABLES_GEARS_DISTANCE_TIMESTAMP_ID, t)
     return __table.putNumber(config.NETWORKTABLES_GEARS_ANGLE_ID, angle) & \
-           __table.putNumber(config.NETWORKTABLES_GEARS_ANGLE_TIMESTAMP_ID, t)
+           __table.putNumber(config.NETWORKTABLES_GEARS_ANGLE_TIMESTAMP_ID, t) & \
+           __table.putNumber(config.NETWORKTABLES_GEARS_DISTANCE_ID, distance) & \
+          -__table.putNumber(config.NETWORKTABLES_GEARS_DISTANCE_TIMESTAMP_ID, t)
 
 
 def get_mode():
