@@ -3,7 +3,7 @@ from cv2 import cv
 import config
 import logging
 import communications as comms
-from communications import States
+from communications import States, Modes
 import platform
 import v4l2ctl
 
@@ -16,13 +16,17 @@ class Capture(object):
     rval = None
 
 
-    def __init__(self, source):
+    def __init__(self, source, type):
+        self.type = type
         try:
             self.video = cv2.VideoCapture(source)
             self.rval = True
         except cv2.error:
             self.rval = False
-            comms.set_state(States.CAMERA_ERROR)
+            if type == Modes.HIGH_GOAL:
+                comms.set_high_goal_state(States.CAMERA_ERROR)
+            else:
+                comms.set_gear_state(States.CAMERA_ERROR)
         self.source = source
         self.live = True if isinstance(source, int) else False
         self.__configure()
@@ -60,15 +64,24 @@ class Capture(object):
                                 v4l2ctl.set(self.source, prop, config.CAMERA_V4L_SETTINGS[prop])
                         except AttributeError as e:
                             log.error('Setting camera properties failed!')
-                            comms.set_state(States.CAMERA_ERROR)
+                            if type == Modes.HIGH_GOAL:
+                                comms.set_high_goal_state(States.CAMERA_ERROR)
+                            else:
+                                comms.set_gear_state(States.CAMERA_ERROR)
                             print(e)
                 else:
                     self.rval = False
                     log.critical("Problem reading from capture")
-                    comms.set_state(States.CAMERA_ERROR)
+                    if type == Modes.HIGH_GOAL:
+                        comms.set_high_goal_state(States.CAMERA_ERROR)
+                    else:
+                        comms.set_gear_state(States.CAMERA_ERROR)
 
             else:
                 self.rval = False
                 log.critical("Problem opening capture")
 
-                comms.set_state(States.CAMERA_ERROR)
+                if type == Modes.HIGH_GOAL:
+                    comms.set_high_goal_state(States.CAMERA_ERROR)
+                else:
+                    comms.set_gear_state(States.CAMERA_ERROR)

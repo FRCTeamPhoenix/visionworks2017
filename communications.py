@@ -26,18 +26,34 @@ def __log_value(k, v):
     log.debug('Sent value %s to %s', v, k)
 
 
-def set_state(state):
+def set_high_goal_state(state):
     assert isinstance(state, States), 'Value is not a valid jetson state'
     last = None
-    if config.NETWORKTABLES_STATE_ID in __table.getKeys():
-        last = __table.getNumber(config.NETWORKTABLES_STATE_ID)
+    if config.NETWORKTABLES_HIGH_GOAL_STATE_ID in __table.getKeys():
+        last = __table.getNumber(config.NETWORKTABLES_HIGH_GOAL_STATE_ID)
     if state.value != last:
         log.info('Set state %s', state.name)
         t = __time()
-        __log_value(config.NETWORKTABLES_STATE_ID, state.value)
-        __log_value(config.NETWORKTABLES_STATE_TIMESTAMP_ID, t)
-        return __table.putNumber(config.NETWORKTABLES_STATE_ID, state.value) & \
-               __table.putNumber(config.NETWORKTABLES_STATE_TIMESTAMP_ID, t)
+        __log_value(config.NETWORKTABLES_HIGH_GOAL_STATE_ID, state.value)
+        __log_value(config.NETWORKTABLES_HIGH_GOAL_STATE_TIMESTAMP_ID, t)
+        return __table.putNumber(config.NETWORKTABLES_HIGH_GOAL_STATE_ID, state.value) & \
+               __table.putNumber(config.NETWORKTABLES_HIGH_GOAL_STATE_TIMESTAMP_ID, t)
+    else:
+        return True
+
+
+def set_gear_state(state):
+    assert isinstance(state, States), 'Value is not a valid jetson state'
+    last = None
+    if config.NETWORKTABLES_GEAR_STATE_ID in __table.getKeys():
+        last = __table.getNumber(config.NETWORKTABLES_GEAR_ID)
+    if state.value != last:
+        log.info('Set state %s', state.name)
+        t = __time()
+        __log_value(config.NETWORKTABLES_GEAR_STATE_ID, state.value)
+        __log_value(config.NETWORKTABLES_GEAR_STATE_TIMESTAMP_ID, t)
+        return __table.putNumber(config.NETWORKTABLES_GEAR_STATE_ID, state.value) & \
+               __table.putNumber(config.NETWORKTABLES_GEAR_STATE_TIMESTAMP_ID, t)
     else:
         return True
 

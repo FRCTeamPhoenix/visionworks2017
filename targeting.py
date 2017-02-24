@@ -62,11 +62,12 @@ log = logging.getLogger(__name__)
 log.info('OpenCV %s', cv2.__version__)
 
 # send confirmation that we're alive
-comms.set_state(States.POWERED_ON)
+comms.set_high_goal_state(States.POWERED_ON)
+comms.set_gear_state(States.POWERED_ON)
 
 # capture init
-turret_cam_server = Capture(config.VIDEO_SOURCE_TURRET)
-gear_cam_server = Capture(config.VIDEO_SOURCE_GEAR)
+turret_cam_server = Capture(config.VIDEO_SOURCE_TURRET, Modes.HIGH_GOAL)
+gear_cam_server = Capture(config.VIDEO_SOURCE_GEAR, Modes.GEARS)
 
 
 def gear_targeting(hsv):
@@ -121,6 +122,9 @@ def gear_targeting(hsv):
                 target = None
 
     if target is not None:
+        # set state
+        comms.set_gear_state(States.TARGET_FOUND)
+
         M = cv2.moments(target)
         cx = int(M['m10'] / M['m00'])
         cy = int(M['m01'] / M['m00'])
@@ -137,7 +141,7 @@ def gear_targeting(hsv):
 
             cv2.drawContours(frame, [np.array([[cx, cy]])], 0, (0, 0, 255), 10)
     else:
-        comms.set_state(States.TARGET_NOT_FOUND)
+        comms.set_gear_state(States.TARGET_NOT_FOUND)
 
 
 def high_goal_targeting(hsv, turret_angle):
@@ -179,7 +183,7 @@ def high_goal_targeting(hsv, turret_angle):
     # if we found a target
     if target is not None:
         # set state
-        comms.set_state(States.TARGET_FOUND)
+        comms.set_high_goal_state(States.TARGET_FOUND)
 
         # find the centroid of the target
         M = cv2.moments(target)
@@ -199,7 +203,7 @@ def high_goal_targeting(hsv, turret_angle):
             cv2.drawContours(frame, [np.array([[cx, cy]])], 0, (0, 0, 255), 10)
             cv2.putText(frame, str(angle), (10, 450), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, 9)
     else:
-        comms.set_state(States.TARGET_NOT_FOUND)
+        comms.set_high_goal_state(States.TARGET_NOT_FOUND)
 
 
 def basic_frame_process(frame):
@@ -279,6 +283,7 @@ while True:
         # just keep looping :)
         print(e)
 
-comms.set_state(States.POWERED_OFF)
+comms.set_high_goal_state(States.POWERED_OFF)
+comms.set_gear_state(States.POWERED_OFF)
 log.info("Main loop exited successfully")
 log.info("FPS at time of exit: %s", fps)
