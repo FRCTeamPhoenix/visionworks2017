@@ -23,7 +23,7 @@ def video_feed():
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
 
-def init(cam_server):
+def init(cam_server, port):
     global cam
     cam = cam_server
-    app.run(host='0.0.0.0', debug=False, threaded=True)
+    app.run(host='0.0.0.0', port=port, debug=False, threaded=True)

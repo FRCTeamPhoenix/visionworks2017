@@ -10,6 +10,7 @@ from config import Modes, States
 import feed
 import thread
 from capture import Capture
+import sys
 
 
 # gui config/mode stuff (see config.py for details)
@@ -229,32 +230,40 @@ frametimes = list()
 last = time.time()
 fps = 0
 
+config.SERVER_MODE = int(sys.argv[2])
 if config.USE_HTTP_SERVER:
-    thread.start_new_thread(feed.init, (turret_cam_server if config.SERVER_MODE == Modes.HIGH_GOAL else gear_cam_server,))
+    thread.start_new_thread(feed.init, (turret_cam_server if config.SERVER_MODE == 0 else gear_cam_server, int(sys.argv[1])))
 
 log.info("Starting vision processing loop")
 # loop for as long as we're still getting images
 while True:
 
     try:
-        mode = comms.get_mode()
-        #mode = Modes.HIGH_GOAL
+        #mode = comms.get_mode()
+        mode = int(sys.argv[2])
+
+	print(mode)
         if mode == Modes.NOT_YET_SET:
             continue
 
-        if turret_cam_server.rval and (mode == Modes.HIGH_GOAL or mode == Modes.BOTH):
+	print(turret_cam_server.rval)
+        if turret_cam_server.rval and (mode == 0): #Modes.HIGH_GOAL or mode == Modes.BOTH):
+	    print("Mode high goal")
             turret_cam_server.update()
             turret_angle = comms.get_turret_angle()
+	    if turret_angle == None:
+		turret_angle = 0
             rval, frame = turret_cam_server.rval, turret_cam_server.frame
-            if turret_angle:
-                hsv = basic_frame_process(frame)
-                high_goal_targeting(hsv, turret_angle)
+            #if turret_angle:
+            hsv = basic_frame_process(frame)
+            high_goal_targeting(hsv, turret_angle)
             if draw:
                 cv2.putText(frame, str(fps), (10, 40), cv.CV_FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2, 8)
             if config.USE_HTTP_SERVER:
+		print("Setting JPEG")
                 turret_cam_server.set_jpeg(frame)
 
-        if gear_cam_server.rval and (mode == Modes.GEARS or mode == Modes.BOTH):
+        if gear_cam_server.rval and (mode == 1): #Modes.GEARS or mode == Modes.BOTH):
             gear_cam_server.update()
             rval, frame = gear_cam_server.rval, gear_cam_server.frame
             hsv = basic_frame_process(frame)
