@@ -145,10 +145,10 @@ frametimes = list()
 last = time.time()
 fps = 0
 
-run_server = config.USE_HTTP_SERVER and sys.argv[1]
+run_server = config.USE_HTTP_SERVER and len(sys.argv) > 1
 if run_server:
     port = int(sys.argv[1])
-    thread.start_new_thread(feed.init, turret_cam_server, port))
+    thread.start_new_thread(feed.init, (turret_cam_server, port))
 
 log.info("Starting vision processing loop")
 # loop for as long as we're still getting images
@@ -159,8 +159,8 @@ while True:
             turret_cam_server.update()
             turret_angle = comms.get_turret_angle()
 
-	        if turret_angle == None:
-		        turret_angle = 0
+	    if turret_angle == None:
+		turret_angle = 0
 
             rval, frame = turret_cam_server.rval, turret_cam_server.frame
 
