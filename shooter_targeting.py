@@ -158,14 +158,16 @@ while True:
         if turret_cam_server.rval:
             turret_cam_server.update()
             turret_angle = comms.get_turret_angle()
-
-	    if turret_angle == None:
-		turret_angle = 0
-
             rval, frame = turret_cam_server.rval, turret_cam_server.frame
 
-            hsv = basic_frame_process(frame)
-            high_goal_targeting(hsv, turret_angle)
+            # TESTING
+            if turret_angle == None:
+                turret_angle = 0
+            # ENDTESTING
+
+            if turret_angle is not None:
+                hsv = basic_frame_process(frame)
+                high_goal_targeting(hsv, turret_angle)
             if draw:
                 cv2.putText(frame, str(fps), (10, 40), cv.CV_FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2, 8)
             if config.USE_HTTP_SERVER:
