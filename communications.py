@@ -58,13 +58,17 @@ def set_gear_state(state):
         return True
 
 
-def set_high_goal(angle):
+def set_high_goal(angle, distance):
     log.debug('Sent high goal angle %s', angle)
     t = __time()
-    __log_value(config.NETWORKTABLES_GOAL_ID, angle)
-    __log_value(config.NETWORKTABLES_GOAL_TIMESTAMP_ID, t)
-    return __table.putNumber(config.NETWORKTABLES_GOAL_ID, angle) & \
-           __table.putNumber(config.NETWORKTABLES_GOAL_TIMESTAMP_ID, t)
+    __log_value(config.NETWORKTABLES_GOAL_ANGLE_ID, angle)
+    __log_value(config.NETWORKTABLES_GOAL_ANGLE_TIMESTAMP_ID, t)
+    __log_value(config.NETWORKTABLES_GOAL_DISTANCE_ID, distance)
+    __log_value(config.NETWORKTABLES_GOAL_DISTANCE_TIMESTAMP_ID, t)
+    return __table.putNumber(config.NETWORKTABLES_GOAL_ANGLE_ID, angle) & \
+           __table.putNumber(config.NETWORKTABLES_GOAL_ANGLE_TIMESTAMP_ID, t) & \
+           __table.putNumber(config.NETWORKTABLES_GOAL_DISTANCE_ID, distance) & \
+           __table.putNumber(config.NETWORKTABLES_GEARS_DISTANCE_TIMESTAMP_ID, t)
 
 
 def get_turret_angle():

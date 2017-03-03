@@ -5,6 +5,7 @@ import collections
 import numpy as np
 from enum import Enum
 from datetime import datetime
+import math
 
 class Modes(Enum):
     HIGH_GOAL = 0
@@ -43,8 +44,10 @@ NETWORKTABLES_HIGH_GOAL_STATE_TIMESTAMP_ID = 'high_goal_state_time'
 NETWORKTABLES_GEAR_STATE_ID = 'gear_state'
 NETWORKTABLES_GEAR_STATE_TIMESTAMP_ID = 'gear_state_time'
 NETWORKTABLES_MODE_ID = 'jetson_mode'
-NETWORKTABLES_GOAL_ID = 'high_goal'
-NETWORKTABLES_GOAL_TIMESTAMP_ID = 'high_goal_time'
+NETWORKTABLES_GOAL_ANGLE_ID = 'high_goal_angle'
+NETWORKTABLES_GOAL_ANGLE_TIMESTAMP_ID = 'high_goal_time'
+NETWORKTABLES_GOAL_DISTANCE_ID = 'high_goal_distance'
+NETWORKTABLES_GOAL_DISTANCE_TIMESTAMP_ID = 'high_goal_distance_time'
 NETWORKTABLES_GEARS_ANGLE_ID = 'gear_angle'
 NETWORKTABLES_GEARS_DISTANCE_ID = 'gear_distance'
 NETWORKTABLES_GEARS_ANGLE_TIMESTAMP_ID = 'gear_angle_time'
@@ -56,8 +59,8 @@ LOG_LEVEL = logging.INFO
 
 filename = datetime.now().strftime('%Y%m%d-%H:%M') + '.log'
 LOG_STREAM = open(filename, 'w+')
-sys.stdout = LOG_STREAM
-sys.stderr = LOG_STREAM
+#sys.stdout = LOG_STREAM
+#sys.stderr = LOG_STREAM
 
 # camera configuration can be a camera index or a filename
 #   turret - /dev/video10
@@ -83,6 +86,7 @@ VIDEO_SOURCE_TURRET = "shooter_target.avi" #path_to_index('/dev/turret_cam')
 VIDEO_SOURCE_GEAR = "gears_target.avi" #path_to_index('/dev/gear_cam')
 RESOLUTION_X = 640
 RESOLUTION_Y = 480
+ASPECT = RESOLUTION_Y / RESOLUTION_X
 CAMERA_V4L_SETTINGS = collections.OrderedDict([
     (v4l2ctl.PROP_EXPOSURE_AUTO, 1),
     (v4l2ctl.PROP_EXPOSURE_AUTO_PRIORITY, 0),
@@ -97,6 +101,10 @@ CAMERA_MATRIX = np.array([[ 771.,      0.,    float(RESOLUTION_X / 2)],
                             [   0.,      0.,      1.]])
 CAMERA_DISTORTION_MATRIX = np.array([[ 0.03236637, -0.03763916, -0.00569912, -0.00091719, -0.008543  ]])
 CAMERA_DIAG_FOV = 83
+CAMERA_HORIZ_FOV = math.sqrt(CAMERA_DIAG_FOV ** 2 / ((ASPECT ** 2) + 1))
+CAMERA_VERT_FOV = ASPECT * CAMERA_HORIZ_FOV
+CAMERA_HEIGHT = 21.5 # height of the camera off the ground (inches)
+CAMERA_ANGLE = 30 # angle of the camera
 
 # processing tuning
 SHOOTER_THRESH_LOW = np.array([70, 100, 85])
@@ -126,3 +134,4 @@ RELATIVE_SPLIT_CONTOUR_EPSILON = 1
 
 # constants for steamworks game
 STEAMWORKS_GEAR_GOAL_AREA = 10.25 * 5 # inches
+STEAMWORKS_HIGH_GOAL_CENTER_HEIGHT = 83 # inches

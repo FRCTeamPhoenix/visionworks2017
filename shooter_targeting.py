@@ -98,8 +98,23 @@ def high_goal_targeting(hsv, turret_angle):
                 target2 = c
         target = target1
 
-    if best_area1 > 0 and best_area2 > 0:
-        target = cv2.convexHull(np.concatenate((target1, target2)))
+        #SANITY CHECK (the x distance from the two contours must be less than the y distance if it's the high goal)
+        if target2 is not None:
+            M1 = cv2.moments(target1)
+            cx1 = int(M1['m10'] / M1['m00'])
+            cy1 = int(M1['m01'] / M1['m00'])
+            M2 = cv2.moments(target2)
+            cx2 = int(M2['m10'] / M2['m00'])
+            cy2 = int(M2['m01'] / M2['m00'])
+
+            offset_x = abs(cx1 - cx2)
+            offset_y = abs(cy1 - cy2)
+
+            if offset_y < offset_x * 10:
+                target = None
+
+        if best_area1 > 0 and best_area2 > 0 and target is not None:
+            target = cv2.convexHull(np.concatenate((target1, target2)))
 
     # if we found a target
     if target is not None:
@@ -112,17 +127,18 @@ def high_goal_targeting(hsv, turret_angle):
         cy = int(M['m01'] / M['m00'])
 
         # calculate the angle needed in order to align the target
-        distance_from_center = (res_x / 2) - cx
-        angle = distance_from_center * ptd # pixel distance * conversion factor
+        angle_x = ((res_x / 2) - cx) * ptd # pixel distance * conversion factor
+        angle_y = ((res_y / 2) - cy) * ptd - config.CAMERA_ANGLE
+        distance = (config.STEAMWORKS_HIGH_GOAL_CENTER_HEIGHT - config.CAMERA_HEIGHT) / math.tan(math.radians(angle_y))
 
-        # send the (absolute) angle to the RIO
-        comms.set_high_goal(turret_angle + angle)
+        # send the (absolute) angle and distance to the RIO
+        comms.set_high_goal(turret_angle + angle_x, distance)
 
         # draw debug information about the target on the frame
         if draw:
             cv2.drawContours(frame, [target], 0, (0, 255, 0), 3)
             cv2.drawContours(frame, [np.array([[cx, cy]])], 0, (0, 0, 255), 10)
-            cv2.putText(frame, str(angle), (10, 450), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, 9)
+            cv2.putText(frame, str(angle_x), (10, 450), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, 9)
     else:
         comms.set_high_goal_state(States.TARGET_NOT_FOUND)
 
