@@ -82,8 +82,8 @@ def path_to_index(path):
                 return int(m.group(0)[-2])
     return None
 
-VIDEO_SOURCE_TURRET = "shooter_target.avi" #path_to_index('/dev/turret_cam')
-VIDEO_SOURCE_GEAR = "gears_target.avi" #path_to_index('/dev/gear_cam')
+VIDEO_SOURCE_TURRET = path_to_index('/dev/turret_cam')
+VIDEO_SOURCE_GEAR = path_to_index('/dev/gear_cam')
 RESOLUTION_X = 640
 RESOLUTION_Y = 480
 ASPECT = RESOLUTION_Y / RESOLUTION_X

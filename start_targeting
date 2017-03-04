@@ -1,3 +1,4 @@
 #!/bin/bash
+cd "$(dirname "$0")"
 (python shooter_targeting.py 5000 &)
 (python gears_targeting.py 5001 &)
