@@ -86,7 +86,7 @@ VIDEO_SOURCE_TURRET = path_to_index('/dev/turret_cam')
 VIDEO_SOURCE_GEAR = path_to_index('/dev/gear_cam')
 RESOLUTION_X = 640
 RESOLUTION_Y = 480
-ASPECT = RESOLUTION_Y / RESOLUTION_X
+ASPECT = float(RESOLUTION_Y) / RESOLUTION_X
 CAMERA_V4L_SETTINGS = collections.OrderedDict([
     (v4l2ctl.PROP_EXPOSURE_AUTO, 1),
     (v4l2ctl.PROP_EXPOSURE_AUTO_PRIORITY, 0),
@@ -94,6 +94,7 @@ CAMERA_V4L_SETTINGS = collections.OrderedDict([
     (v4l2ctl.PROP_WHITE_BALANCE_TEMP_AUTO, 0),
     (v4l2ctl.PROP_FOCUS_AUTO, 0)
 ])
+
 
 # camera specs (used for pose estimation) (these ones are for the logitech c910 cams)
 CAMERA_MATRIX = np.array([[ 771.,      0.,    float(RESOLUTION_X / 2)],
