@@ -128,9 +128,11 @@ def high_goal_targeting(hsv, turret_angle):
 
         # calculate the angle needed in order to align the target
         angle_x = ((res_x / 2) - cx) * ptd # pixel distance * conversion factor
-        angle_y = ((res_y / 2) - cy) * ptd - config.CAMERA_ANGLE
+        angle_y = ((res_y / 2) - cy) * ptd + config.CAMERA_ANGLE
         distance = (config.STEAMWORKS_HIGH_GOAL_CENTER_HEIGHT - config.CAMERA_HEIGHT) / math.tan(math.radians(angle_y))
-
+	#print("cy: " + str(cy))
+	#print("angle_y: " + str(angle_y))
+	print("distance: " + str(distance))
         # send the (absolute) angle and distance to the RIO
         comms.set_high_goal(turret_angle + angle_x, distance)
 
@@ -186,8 +188,9 @@ while True:
                 high_goal_targeting(hsv, turret_angle)
             if draw:
                 cv2.putText(frame, str(fps), (10, 40), cv.CV_FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2, 8)
-            if config.USE_HTTP_SERVER:
-                turret_cam_server.set_jpeg(frame)
+            #if config.USE_HTTP_SERVER:
+            print("Update image")
+            turret_cam_server.set_jpeg(frame)
 
         # calculate fps
         frametimes.append(time.time() - last)

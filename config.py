@@ -22,7 +22,7 @@ class States(Enum):
 
 # General
 WAIT_TIME = 25 # wait time in the main loop
-START_FRAME = 0 # for video replays
+START_FRAME = 360 # for video replays
 
 
 # GUI configuration
@@ -60,7 +60,7 @@ LOG_LEVEL = logging.INFO
 filename = datetime.now().strftime('%Y%m%d-%H:%M') + '.log'
 LOG_STREAM = open(filename, 'w+')
 #sys.stdout = LOG_STREAM
-#sys.stderr = LOG_STREAM
+sys.stderr = LOG_STREAM
 
 # camera configuration can be a camera index or a filename
 #   turret - /dev/video10
@@ -82,8 +82,8 @@ def path_to_index(path):
                 return int(m.group(0)[-2])
     return None
 
-VIDEO_SOURCE_TURRET = path_to_index('/dev/turret_cam')
-VIDEO_SOURCE_GEAR = path_to_index('/dev/gear_cam')
+VIDEO_SOURCE_TURRET = 0 # path_to_index('/dev/turret_cam')
+VIDEO_SOURCE_GEAR = 0 # path_to_index('/dev/gear_cam')
 RESOLUTION_X = 640
 RESOLUTION_Y = 480
 ASPECT = float(RESOLUTION_Y) / RESOLUTION_X
@@ -105,7 +105,7 @@ CAMERA_DIAG_FOV = 83
 CAMERA_HORIZ_FOV = math.sqrt(CAMERA_DIAG_FOV ** 2 / ((ASPECT ** 2) + 1))
 CAMERA_VERT_FOV = ASPECT * CAMERA_HORIZ_FOV
 CAMERA_HEIGHT = 21.5 # height of the camera off the ground (inches)
-CAMERA_ANGLE = 30 # angle of the camera
+CAMERA_ANGLE = 35 # angle of the camera
 
 # processing tuning
 SHOOTER_THRESH_LOW = np.array([70, 100, 85])
