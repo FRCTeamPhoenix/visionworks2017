@@ -86,7 +86,7 @@ VIDEO_SOURCE_TURRET = 0#path_to_index('/dev/turret_cam')
 VIDEO_SOURCE_GEAR = 1#path_to_index('/dev/gear_cam')
 RESOLUTION_X = 720
 RESOLUTION_Y = 480
-ASPECT = RESOLUTION_Y / RESOLUTION_X
+ASPECT = float(RESOLUTION_Y) / RESOLUTION_X
 CAMERA_V4L_SETTINGS = collections.OrderedDict([
     (v4l2ctl.PROP_EXPOSURE_AUTO, 1),
     (v4l2ctl.PROP_EXPOSURE_AUTO_PRIORITY, 0),
