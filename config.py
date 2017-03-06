@@ -84,7 +84,7 @@ def path_to_index(path):
 
 VIDEO_SOURCE_TURRET = 0#path_to_index('/dev/turret_cam')
 VIDEO_SOURCE_GEAR = 1#path_to_index('/dev/gear_cam')
-RESOLUTION_X = 640
+RESOLUTION_X = 720
 RESOLUTION_Y = 480
 ASPECT = RESOLUTION_Y / RESOLUTION_X
 CAMERA_V4L_SETTINGS = collections.OrderedDict([
@@ -104,7 +104,7 @@ CAMERA_DIAG_FOV = 83
 CAMERA_HORIZ_FOV = math.sqrt(CAMERA_DIAG_FOV ** 2 / ((ASPECT ** 2) + 1))
 CAMERA_VERT_FOV = ASPECT * CAMERA_HORIZ_FOV
 CAMERA_HEIGHT = 21.5 # height of the camera off the ground (inches)
-CAMERA_ANGLE = 38.45 # angle of the camera
+CAMERA_ANGLE = 38.4 # angle of the camera
 
 # processing tuning
 SHOOTER_THRESH_LOW = np.array([40, 20, 70])
@@ -133,5 +133,5 @@ MAX_GEARS_AREA = 0.4 * RESOLUTION_X * RESOLUTION_Y
 RELATIVE_SPLIT_CONTOUR_EPSILON = 1
 
 # constants for steamworks game
-STEAMWORKS_GEAR_GOAL_AREA = 10.25 * 5 # inches
+#STEAMWORKS_GEAR_GOAL_AREA = 10.25 * 5 # inches
 STEAMWORKS_HIGH_GOAL_CENTER_HEIGHT = 83 # inches

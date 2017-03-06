@@ -11,7 +11,7 @@ import feed
 import thread
 from capture import Capture
 import sys
-
+from itertools import permutations
 
 # gui config/mode stuff (see config.py for details)
 show_image = config.GUI_SHOW
@@ -80,41 +80,40 @@ def high_goal_targeting(hsv, turret_angle):
 
     # identify the target if there is one
     target = None
-    if len(contours) > 0:
-        # find the two biggest contours
-        best_area1 = config.MIN_SHOOTER_AREA
-        best_area2 = config.MIN_SHOOTER_AREA
-        target1 = None
-        target2 = None
+    contours_with_areas = []
+    if len(contours) >= 2:
         for c in contours:
             area = cv2.contourArea(c)
-            if area > best_area1:
-                best_area2 = best_area1
-                target2 = target1
-                best_area1 = area
-                target1 = c
-            elif area > best_area2:
-                best_area2 = area
-                target2 = c
-        target = target1
+            if area > config.MIN_SHOOTER_AREA:
+                contours_with_areas.append((c, area))
+        contours_with_areas.sort(key=lambda x: -x[1])
+        contours_with_areas = contours_with_areas[:6]
+    
 
-        #SANITY CHECK (the x distance from the two contours must be less than the y distance if it's the high goal)
-        if target2 is not None:
-            M1 = cv2.moments(target1)
+        def high_goal_cost(c1, c2):
+            M1 = cv2.moments(c1)
             cx1 = int(M1['m10'] / M1['m00'])
             cy1 = int(M1['m01'] / M1['m00'])
-            M2 = cv2.moments(target2)
+            M2 = cv2.moments(c2)
             cx2 = int(M2['m10'] / M2['m00'])
             cy2 = int(M2['m01'] / M2['m00'])
-
+         
             offset_x = abs(cx1 - cx2)
             offset_y = abs(cy1 - cy2)
 
-            if offset_y < offset_x:
-                target = None
-
-        if best_area1 > 0 and best_area2 > 0 and target is not None:
-            target = cv2.convexHull(np.concatenate((target1, target2)))
+            return offset_x * 6 + offset_y
+    
+        lowest_cost = 10000
+        best_contours = None
+        for p1, p2 in permutations(contours_with_areas, 2):
+            c1, a1 = p1[0], p1[1]
+            c2, a2 = p2[0], p2[1]
+        
+            cost = high_goal_cost(c1, c2)
+            if cost < lowest_cost:
+                lowest_cost = cost
+                best_contours = (c1, c2)
+        target = cv2.convexHull(np.concatenate((best_contours[0], best_contours[1])))
 
     # if we found a target
     if target is not None:
@@ -128,7 +127,7 @@ def high_goal_targeting(hsv, turret_angle):
 
         # calculate the angle needed in order to align the target
         angle_x = ((res_x / 2) - cx) * ptd # pixel distance * conversion factor
-        angle_y = ((res_y / 2) - cy) * ptd - config.CAMERA_ANGLE
+        angle_y = (cy - (res_y / 2)) * ptd - config.CAMERA_ANGLE
         distance = abs((config.STEAMWORKS_HIGH_GOAL_CENTER_HEIGHT - config.CAMERA_HEIGHT) / math.tan(math.radians(angle_y)))
 
         # send the (absolute) angle and distance to the RIO
