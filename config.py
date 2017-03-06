@@ -22,7 +22,7 @@ class States(Enum):
 
 # General
 WAIT_TIME = 25 # wait time in the main loop
-START_FRAME = 360 # for video replays
+START_FRAME = 0 # for video replays
 
 
 # GUI configuration
@@ -58,9 +58,9 @@ NETWORKTABLES_TURRET_ANGLE_ID = 'turret_angle'
 LOG_LEVEL = logging.INFO
 
 filename = datetime.now().strftime('%Y%m%d-%H:%M') + '.log'
-LOG_STREAM = open(filename, 'w+')
+LOG_STREAM = sys.stdout#open(filename, 'w+')
 #sys.stdout = LOG_STREAM
-sys.stderr = LOG_STREAM
+#sys.stderr = LOG_STREAM
 
 # camera configuration can be a camera index or a filename
 #   turret - /dev/video10
@@ -82,19 +82,18 @@ def path_to_index(path):
                 return int(m.group(0)[-2])
     return None
 
-VIDEO_SOURCE_TURRET = 0 # path_to_index('/dev/turret_cam')
-VIDEO_SOURCE_GEAR = 0 # path_to_index('/dev/gear_cam')
+VIDEO_SOURCE_TURRET = 0#path_to_index('/dev/turret_cam')
+VIDEO_SOURCE_GEAR = 1#path_to_index('/dev/gear_cam')
 RESOLUTION_X = 640
 RESOLUTION_Y = 480
-ASPECT = float(RESOLUTION_Y) / RESOLUTION_X
+ASPECT = RESOLUTION_Y / RESOLUTION_X
 CAMERA_V4L_SETTINGS = collections.OrderedDict([
     (v4l2ctl.PROP_EXPOSURE_AUTO, 1),
     (v4l2ctl.PROP_EXPOSURE_AUTO_PRIORITY, 0),
-    (v4l2ctl.PROP_EXPOSURE_ABS, 10),
+    (v4l2ctl.PROP_EXPOSURE_ABS, 5),
     (v4l2ctl.PROP_WHITE_BALANCE_TEMP_AUTO, 0),
     (v4l2ctl.PROP_FOCUS_AUTO, 0)
 ])
-
 
 # camera specs (used for pose estimation) (these ones are for the logitech c910 cams)
 CAMERA_MATRIX = np.array([[ 771.,      0.,    float(RESOLUTION_X / 2)],
@@ -105,11 +104,11 @@ CAMERA_DIAG_FOV = 83
 CAMERA_HORIZ_FOV = math.sqrt(CAMERA_DIAG_FOV ** 2 / ((ASPECT ** 2) + 1))
 CAMERA_VERT_FOV = ASPECT * CAMERA_HORIZ_FOV
 CAMERA_HEIGHT = 21.5 # height of the camera off the ground (inches)
-CAMERA_ANGLE = 35 # angle of the camera
+CAMERA_ANGLE = 38.45 # angle of the camera
 
 # processing tuning
-SHOOTER_THRESH_LOW = np.array([70, 100, 85])
-SHOOTER_THRESH_HIGH = np.array([80, 255, 255])
+SHOOTER_THRESH_LOW = np.array([40, 20, 70])
+SHOOTER_THRESH_HIGH = np.array([75, 255, 255])
 GEAR_THRESH_LOW = np.array([70, 100, 100])
 GEAR_THRESH_HIGH = np.array([80, 255, 255])
 
@@ -127,7 +126,7 @@ GEARS_OBJP = np.array([[-5.125, -2.5, 0],
                        [-5.125, 2.5, 0]])
 
 # bounds for target size
-MIN_SHOOTER_AREA = 0.00003 * RESOLUTION_X * RESOLUTION_Y
+MIN_SHOOTER_AREA = 0.00002 * RESOLUTION_X * RESOLUTION_Y
 MAX_SHOOTER_AREA = 0.3 * RESOLUTION_X * RESOLUTION_Y
 MIN_GEARS_AREA = 0.0002 * RESOLUTION_X * RESOLUTION_Y
 MAX_GEARS_AREA = 0.4 * RESOLUTION_X * RESOLUTION_Y
