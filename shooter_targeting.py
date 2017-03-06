@@ -127,7 +127,7 @@ def high_goal_targeting(hsv, turret_angle):
 
         # calculate the angle needed in order to align the target
         angle_x = ((res_x / 2) - cx) * ptd # pixel distance * conversion factor
-        angle_y = (cy - (res_y / 2)) * ptd - config.CAMERA_ANGLE
+        angle_y = ((res_y / 2) - cy) * ptd + config.CAMERA_ANGLE
         distance = abs((config.STEAMWORKS_HIGH_GOAL_CENTER_HEIGHT - config.CAMERA_HEIGHT) / math.tan(math.radians(angle_y)))
 
         # send the (absolute) angle and distance to the RIO
