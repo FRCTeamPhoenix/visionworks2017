@@ -82,15 +82,15 @@ def path_to_index(path):
                 return int(m.group(0)[-2])
     return None
 
-VIDEO_SOURCE_TURRET = 0#path_to_index('/dev/turret_cam')
-VIDEO_SOURCE_GEAR = 1#path_to_index('/dev/gear_cam')
+VIDEO_SOURCE_TURRET = path_to_index('/dev/turret_cam')
+VIDEO_SOURCE_GEAR = path_to_index('/dev/gear_cam')
 RESOLUTION_X = 720
 RESOLUTION_Y = 480
 ASPECT = float(RESOLUTION_Y) / RESOLUTION_X
 CAMERA_V4L_SETTINGS = collections.OrderedDict([
     (v4l2ctl.PROP_EXPOSURE_AUTO, 1),
     (v4l2ctl.PROP_EXPOSURE_AUTO_PRIORITY, 0),
-    (v4l2ctl.PROP_EXPOSURE_ABS, 5),
+    (v4l2ctl.PROP_EXPOSURE_ABS, 20),
     (v4l2ctl.PROP_WHITE_BALANCE_TEMP_AUTO, 0),
     (v4l2ctl.PROP_FOCUS_AUTO, 0)
 ])
@@ -107,8 +107,8 @@ CAMERA_HEIGHT = 21.5 # height of the camera off the ground (inches)
 CAMERA_ANGLE = 38.4 # angle of the camera
 
 # processing tuning
-SHOOTER_THRESH_LOW = np.array([40, 20, 70])
-SHOOTER_THRESH_HIGH = np.array([75, 255, 255])
+SHOOTER_THRESH_LOW = np.array([40, 20, 150])
+SHOOTER_THRESH_HIGH = np.array([85, 255, 255])
 GEAR_THRESH_LOW = np.array([70, 100, 100])
 GEAR_THRESH_HIGH = np.array([80, 255, 255])
 
