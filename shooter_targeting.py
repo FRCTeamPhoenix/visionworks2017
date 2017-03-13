@@ -11,7 +11,7 @@ import feed
 import thread
 from capture import Capture
 import sys
-from itertools import permutations
+from itertools import combinations
 
 # gui config/mode stuff (see config.py for details)
 show_image = config.GUI_SHOW
@@ -105,7 +105,7 @@ def high_goal_targeting(hsv, turret_angle):
     
         lowest_cost = 10000
         best_contours = None
-        for p1, p2 in permutations(contours_with_areas, 2):
+        for p1, p2 in combinations(contours_with_areas, 2):
             c1, a1 = p1[0], p1[1]
             c2, a2 = p2[0], p2[1]
         
