@@ -84,7 +84,7 @@ def path_to_index(path):
 
 VIDEO_SOURCE_TURRET = path_to_index('/dev/turret_cam')
 VIDEO_SOURCE_GEAR = path_to_index('/dev/gear_cam')
-RESOLUTION_X = 720
+RESOLUTION_X = 640
 RESOLUTION_Y = 480
 ASPECT = float(RESOLUTION_Y) / RESOLUTION_X
 CAMERA_V4L_SETTINGS = collections.OrderedDict([
