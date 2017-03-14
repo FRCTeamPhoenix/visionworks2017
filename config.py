@@ -96,10 +96,10 @@ CAMERA_V4L_SETTINGS = collections.OrderedDict([
 ])
 
 # camera specs (used for pose estimation) (these ones are for the logitech c910 cams)
-CAMERA_MATRIX = np.array([[ 771.,      0.,    float(RESOLUTION_X / 2)],
-                            [   0.,    771.,    float(RESOLUTION_Y / 2)],
+CAMERA_MATRIX = np.array([[ 5.6284447817984869e+02,      0.,    float(RESOLUTION_X / 2)],
+                            [   0.,    5.6284447817984869e+02,    float(RESOLUTION_Y / 2)],
                             [   0.,      0.,      1.]])
-CAMERA_DISTORTION_MATRIX = np.array([[ 0.03236637, -0.03763916, -0.00569912, -0.00091719, -0.008543  ]])
+CAMERA_DISTORTION_MATRIX = np.array([[3.9443937614041871e-02, -5.3261951371308369e-01, 0., 0., 1.4406927368950202e+00]])
 CAMERA_DIAG_FOV = 83
 CAMERA_HORIZ_FOV = math.sqrt(CAMERA_DIAG_FOV ** 2 / ((ASPECT ** 2) + 1))
 CAMERA_VERT_FOV = ASPECT * CAMERA_HORIZ_FOV
