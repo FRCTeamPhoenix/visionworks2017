@@ -3,7 +3,7 @@ from enum import Enum
 import logging
 import time
 import config
-from config import States, Modes
+from config import States, Modes, NetworkTablesKeys
 
 
 logging.basicConfig(stream=config.LOG_STREAM, level=config.LOG_LEVEL)
@@ -22,22 +22,25 @@ def __time():
     return int(time.time() * 1000)
 
 
-def __log_value(k, v):
+def __send_number(k, v, timestamp):
+    assert isinstance(k, NetworkTablesKeys), 'Key is not a NetworkTableKey'
+    k = k.value
     log.debug('Sent value %s to %s', v, k)
-
+    t = __time()
+    r = __table.putNumber(k, v)
+    if timestamp:
+        log.debug('Sent value %s to %s', v, k + NetworkTablesKeys.TIMESTAMP.value)
+        r = r and __table.putNumber(k + NetworkTablesKeys.TIMESTAMP.value, t)
+    return r
 
 def set_high_goal_state(state):
     assert isinstance(state, States), 'Value is not a valid jetson state'
     last = None
-    if config.NETWORKTABLES_HIGH_GOAL_STATE_ID in __table.getKeys():
-        last = __table.getNumber(config.NETWORKTABLES_HIGH_GOAL_STATE_ID)
+    if NetworkTablesKeys.HIGH_GOAL_STATE in __table.getKeys():
+        last = __table.getNumber(NetworkTablesKeys.HIGH_GOAL_STATE)
     if state.value != last:
         log.info('Set state %s', state.name)
-        t = __time()
-        __log_value(config.NETWORKTABLES_HIGH_GOAL_STATE_ID, state.value)
-        __log_value(config.NETWORKTABLES_HIGH_GOAL_STATE_TIMESTAMP_ID, t)
-        return __table.putNumber(config.NETWORKTABLES_HIGH_GOAL_STATE_ID, state.value) & \
-               __table.putNumber(config.NETWORKTABLES_HIGH_GOAL_STATE_TIMESTAMP_ID, t)
+        return __send_number(NetworkTablesKeys.HIGH_GOAL_STATE, state.value, timestamp=True)
     else:
         return True
 
@@ -45,53 +48,38 @@ def set_high_goal_state(state):
 def set_gear_state(state):
     assert isinstance(state, States), 'Value is not a valid jetson state'
     last = None
-    if config.NETWORKTABLES_GEAR_STATE_ID in __table.getKeys():
-        last = __table.getNumber(config.NETWORKTABLES_GEAR_STATE_ID)
+    if NetworkTablesKeys.GEAR_STATE in __table.getKeys():
+        last = __table.getNumber(NetworkTablesKeys.GEAR_STATE)
     if state.value != last:
         log.info('Set state %s', state.name)
-        t = __time()
-        __log_value(config.NETWORKTABLES_GEAR_STATE_ID, state.value)
-        __log_value(config.NETWORKTABLES_GEAR_STATE_TIMESTAMP_ID, t)
-        return __table.putNumber(config.NETWORKTABLES_GEAR_STATE_ID, state.value) & \
-               __table.putNumber(config.NETWORKTABLES_GEAR_STATE_TIMESTAMP_ID, t)
+        return __send_number(NetworkTablesKeys.GEAR_STATE, state.value, timestamp=True)
     else:
         return True
 
 
 def set_high_goal(angle, distance):
     log.debug('Sent high goal angle %s', angle)
-    t = __time()
-    __log_value(config.NETWORKTABLES_GOAL_ANGLE_ID, angle)
-    __log_value(config.NETWORKTABLES_GOAL_ANGLE_TIMESTAMP_ID, t)
-    __log_value(config.NETWORKTABLES_GOAL_DISTANCE_ID, distance)
-    __log_value(config.NETWORKTABLES_GOAL_DISTANCE_TIMESTAMP_ID, t)
-    return __table.putNumber(config.NETWORKTABLES_GOAL_ANGLE_ID, angle) & \
-           __table.putNumber(config.NETWORKTABLES_GOAL_ANGLE_TIMESTAMP_ID, t) & \
-           __table.putNumber(config.NETWORKTABLES_GOAL_DISTANCE_ID, distance) & \
-           __table.putNumber(config.NETWORKTABLES_GEARS_DISTANCE_TIMESTAMP_ID, t)
+    log.debug('Sent high goal distance %s', distance)
+    return __send_number(NetworkTablesKeys.HIGH_GOAL_ANGLE, angle, timestamp=True) & \
+           __send_number(NetworkTablesKeys.HIGH_GOAL_DISTANCE, distance, timestamp=True)
 
 
 def get_turret_angle():
-    if config.NETWORKTABLES_TURRET_ANGLE_ID in __table.getKeys():
-        return __table.getNumber(config.NETWORKTABLES_TURRET_ANGLE_ID)
+    if NetworkTablesKeys.TURRET_ANGLE in __table.getKeys():
+        return __table.getNumber(NetworkTablesKeys.TURRET_ANGLE)
     return None
 
 
-def set_gear(angle, distance):
-    log.debug('Sent gear angle %s', angle)
-    log.debug('Sent gear distance %s', distance)
-    t = __time()
-    __log_value(config.NETWORKTABLES_GEARS_ANGLE_ID, angle)
-    __log_value(config.NETWORKTABLES_GEARS_ANGLE_TIMESTAMP_ID, t)
-    __log_value(config.NETWORKTABLES_GEARS_DISTANCE_ID, distance)
-    __log_value(config.NETWORKTABLES_GEARS_DISTANCE_TIMESTAMP_ID, t)
-    return __table.putNumber(config.NETWORKTABLES_GEARS_ANGLE_ID, angle) & \
-           __table.putNumber(config.NETWORKTABLES_GEARS_ANGLE_TIMESTAMP_ID, t) & \
-           __table.putNumber(config.NETWORKTABLES_GEARS_DISTANCE_ID, distance) & \
-          -__table.putNumber(config.NETWORKTABLES_GEARS_DISTANCE_TIMESTAMP_ID, t)
+def set_gear(rotation, horizontal, forward):
+    log.debug('Sent gear angle %s', rotation)
+    log.debug('Sent gear horizontal move %s', horizontal)
+    log.debug('Sent gear forward move %s', forward)
+    return __send_number(NetworkTablesKeys.GEARS_ROTATION, rotation, timestamp=True) & \
+    __send_number(NetworkTablesKeys.GEARS_HORIZONTAL, horizontal, timestamp=True) & \
+    __send_number(NetworkTablesKeys.GEARS_FORWARD, forward, timestamp=True)
 
 
 def get_mode():
-    if config.NETWORKTABLES_MODE_ID in __table.getKeys():
-        return __table.getNumber(config.NETWORKTABLES_MODE_ID)
+    if NetworkTablesKeys.MODE in __table.getKeys():
+        return __table.getNumber(NetworkTablesKeys.MODE)
     return Modes.HIGH_GOAL

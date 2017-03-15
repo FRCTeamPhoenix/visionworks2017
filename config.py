@@ -39,20 +39,17 @@ SERVER_MODE = Modes.HIGH_GOAL
 # communications/networktables
 NETWORKTABLES_SERVER = 'roboRIO-2342-FRC.local'
 NETWORKTABLES_TABLE_NAME = 'datatable'
-NETWORKTABLES_HIGH_GOAL_STATE_ID = 'high_goal_state'
-NETWORKTABLES_HIGH_GOAL_STATE_TIMESTAMP_ID = 'high_goal_state_time'
-NETWORKTABLES_GEAR_STATE_ID = 'gear_state'
-NETWORKTABLES_GEAR_STATE_TIMESTAMP_ID = 'gear_state_time'
-NETWORKTABLES_MODE_ID = 'jetson_mode'
-NETWORKTABLES_GOAL_ANGLE_ID = 'high_goal_angle'
-NETWORKTABLES_GOAL_ANGLE_TIMESTAMP_ID = 'high_goal_time'
-NETWORKTABLES_GOAL_DISTANCE_ID = 'high_goal_distance'
-NETWORKTABLES_GOAL_DISTANCE_TIMESTAMP_ID = 'high_goal_distance_time'
-NETWORKTABLES_GEARS_ANGLE_ID = 'gear_angle'
-NETWORKTABLES_GEARS_DISTANCE_ID = 'gear_distance'
-NETWORKTABLES_GEARS_ANGLE_TIMESTAMP_ID = 'gear_angle_time'
-NETWORKTABLES_GEARS_DISTANCE_TIMESTAMP_ID = 'gear_distance_time'
-NETWORKTABLES_TURRET_ANGLE_ID = 'turret_angle'
+class NetworkTablesKeys(Enum):
+    MODE = 'jetson_mode'
+    HIGH_GOAL_STATE = 'high_goal_state'
+    GEAR_STATE = 'gear_state'
+    HIGH_GOAL_ANGLE = 'high_goal_angle'
+    HIGH_GOAL_DISTANCE = 'high_goal_distance'
+    TURRET_ANGLE = 'turret_angle' # current real life turret position (sent from RIO)
+    GEARS_ROTATION = 'gears_rotation'
+    GEARS_HORIZONTAL = 'gears_horizontal'
+    GEARS_FORWARD = 'gears_forward'
+    TIMESTAMP = '_time'
 
 # logging config
 LOG_LEVEL = logging.INFO
@@ -133,5 +130,4 @@ MAX_GEARS_AREA = 0.4 * RESOLUTION_X * RESOLUTION_Y
 RELATIVE_SPLIT_CONTOUR_EPSILON = 1
 
 # constants for steamworks game
-#STEAMWORKS_GEAR_GOAL_AREA = 10.25 * 5 # inches
 STEAMWORKS_HIGH_GOAL_CENTER_HEIGHT = 83 # inches

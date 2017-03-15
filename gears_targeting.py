@@ -70,6 +70,24 @@ comms.set_gear_state(States.POWERED_ON)
 gear_cam_server = Capture(config.VIDEO_SOURCE_GEAR, Modes.GEARS)
 
 
+# estimates the pose of a target, returns rvecs and tvecs
+def estimate_pose(target):
+    # fix array dimensions (aka unwrap the double wrapped array)
+    new = []
+    for r in target:
+        new.append([r[0][0], r[0][1]])
+    imgp = np.array(new, dtype=np.float64)
+
+    # calculate rotation and translation matrices
+    _, rvecs, tvecs = cv2.solvePnP(gears_objp, imgp, mtx, dist)
+
+    if cv2.norm(np.array(tvecs)) < min_norm_tvecs or cv2.norm(np.array(tvecs)) > max_norm_tvecs:
+        tvecs = None
+    if math.isnan(rvecs[0]):
+        rvecs = None
+    return rvecs, tvecs
+
+
 def gear_targeting(hsv):
     # threshold
     mask = cv2.inRange(hsv, gear_thresh_low, gear_thresh_high)
@@ -125,25 +143,28 @@ def gear_targeting(hsv):
         # set state
         comms.set_gear_state(States.TARGET_FOUND)
 
-        area = cv2.contourArea(target)
-        distance = focal_length * math.sqrt(config.STEAMWORKS_GEAR_GOAL_AREA / area)
+        rvecs, tvecs = estimate_pose(target)
 
-        M = cv2.moments(target)
-        cx = int(M['m10'] / M['m00'])
-        cy = int(M['m01'] / M['m00'])
+        R, _ = cv2.Rodrigues(rvecs)
+        sy = math.sqrt(R[0, 0] * R[0, 0] + R[1, 0] * R[1, 0])
+        y = math.atan2(-R[2, 0], sy)
 
-        # calculate the angle needed in order to align the target
-        distance_from_center = cx - (res_x / 2)
-        angle = distance_from_center * ptd  # pixel distance * conversion factor
+        rotation = -y / math.pi * 180
+        horizontal = float(tvecs[0])
+        forward = float(tvecs[2])
 
-        comms.set_gear(angle, distance)
+        comms.set_gear(rotation, horizontal, forward)
+
         if draw:
             cv2.drawContours(frame, [target], 0, (0, 255, 0), 3)
-            # find the centroid of the target
-            cv2.putText(frame, str(distance), (10, 410), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, 9)
-            cv2.putText(frame, str(angle), (10, 450), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, 9)
-
+            M = cv2.moments(target)
+            cx = int(M['m10'] / M['m00'])
+            cy = int(M['m01'] / M['m00'])
             cv2.drawContours(frame, [np.array([[cx, cy]])], 0, (0, 0, 255), 10)
+
+            cv2.putText(frame, str(rotation), (10, 350), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, 9)
+            cv2.putText(frame, str(horizontal), (10, 400), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, 9)
+            cv2.putText(frame, str(forward), (10, 450), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, 9)
     else:
         comms.set_gear_state(States.TARGET_NOT_FOUND)
 
