@@ -150,7 +150,7 @@ def gear_targeting(hsv):
         y = math.atan2(-R[2, 0], sy)
 
         rotation = -y / math.pi * 180
-        horizontal = float(tvecs[0])
+        horizontal = -float(tvecs[0])
         forward = float(tvecs[2])
 
         comms.set_gear(rotation, horizontal, forward)
