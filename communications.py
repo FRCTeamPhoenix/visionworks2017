@@ -37,7 +37,7 @@ def set_high_goal_state(state):
     assert isinstance(state, State), 'Value is not a valid jetson state'
     last = None
     if NetworkTableKey.HIGH_GOAL_STATE in __table.getKeys():
-        last = __table.getNumber(NetworkTableKey.HIGH_GOAL_STATE)
+        last = __table.getNumber(NetworkTableKey.HIGH_GOAL_STATE.value)
     if state.value != last:
         log.info('Set state %s', state.name)
         return __send_number(NetworkTableKey.HIGH_GOAL_STATE, state.value, timestamp=True)
@@ -48,8 +48,8 @@ def set_high_goal_state(state):
 def set_gear_state(state):
     assert isinstance(state, State), 'Value is not a valid jetson state'
     last = None
-    if NetworkTableKey.GEAR_STATE in __table.getKeys():
-        last = __table.getNumber(NetworkTableKey.GEAR_STATE)
+    if NetworkTableKey.GEAR_STATE.value in __table.getKeys():
+        last = __table.getNumber(NetworkTableKey.GEAR_STATE.value)
     if state.value != last:
         log.info('Set state %s', state.name)
         return __send_number(NetworkTableKey.GEAR_STATE, state.value, timestamp=True)
