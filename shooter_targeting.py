@@ -6,7 +6,7 @@ import math
 import logging
 import communications as comms
 import config
-from config import Modes, States
+from config import Mode, State
 import feed
 import thread
 from capture import Capture
@@ -59,10 +59,10 @@ log = logging.getLogger(__name__)
 log.info('OpenCV %s', cv2.__version__)
 
 # send confirmation that we're alive
-comms.set_high_goal_state(States.POWERED_ON)
+comms.set_high_goal_state(State.POWERED_ON)
 
 # capture init
-turret_cam_server = Capture(config.VIDEO_SOURCE_TURRET, Modes.HIGH_GOAL)
+turret_cam_server = Capture(config.VIDEO_SOURCE_TURRET, Mode.HIGH_GOAL)
 
 
 def high_goal_targeting(hsv, turret_angle):
@@ -118,7 +118,7 @@ def high_goal_targeting(hsv, turret_angle):
     # if we found a target
     if target is not None:
         # set state
-        comms.set_high_goal_state(States.TARGET_FOUND)
+        comms.set_high_goal_state(State.TARGET_FOUND)
 
         # find the centroid of the target
         M = cv2.moments(target)
@@ -140,7 +140,7 @@ def high_goal_targeting(hsv, turret_angle):
             cv2.putText(frame, str(angle_x), (10, 450), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, 9)
             cv2.putText(frame, str(distance), (10, 410), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255),2,9)
     else:
-        comms.set_high_goal_state(States.TARGET_NOT_FOUND)
+        comms.set_high_goal_state(State.TARGET_NOT_FOUND)
 
     return frame
 
@@ -215,7 +215,7 @@ while True:
         # just keep looping :)
         print(e)
 
-comms.set_high_goal_state(States.POWERED_OFF)
-comms.set_gear_state(States.POWERED_OFF)
+comms.set_high_goal_state(State.POWERED_OFF)
+comms.set_gear_state(State.POWERED_OFF)
 log.info("Main loop exited successfully")
 log.info("FPS at time of exit: %s", fps)

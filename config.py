@@ -7,12 +7,12 @@ from enum import Enum
 from datetime import datetime
 import math
 
-class Modes(Enum):
+class Mode(Enum):
     HIGH_GOAL = 0
     GEARS = 1
     BOTH = 2
     NOT_YET_SET = 3
-class States(Enum):
+class State(Enum):
     POWERED_ON = 0
     CAMERA_ERROR = 1
     TARGET_FOUND = 2
@@ -34,12 +34,12 @@ GUI_WAIT_FOR_CONTINUE_KEY = 32
 
 # HTTP configuration
 USE_HTTP_SERVER = True
-SERVER_MODE = Modes.HIGH_GOAL
+SERVER_MODE = Mode.HIGH_GOAL
 
 # communications/networktables
 NETWORKTABLES_SERVER = 'roboRIO-2342-FRC.local'
 NETWORKTABLES_TABLE_NAME = 'datatable'
-class NetworkTablesKeys(Enum):
+class NetworkTableKey(Enum):
     MODE = 'jetson_mode'
     HIGH_GOAL_STATE = 'high_goal_state'
     GEAR_STATE = 'gear_state'

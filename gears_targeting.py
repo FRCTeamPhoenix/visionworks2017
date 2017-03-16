@@ -6,7 +6,7 @@ import math
 import logging
 import communications as comms
 import config
-from config import Modes, States
+from config import Mode, State
 import feed
 import thread
 from capture import Capture
@@ -64,10 +64,10 @@ log = logging.getLogger(__name__)
 log.info('OpenCV %s', cv2.__version__)
 
 # send confirmation that we're alive
-comms.set_gear_state(States.POWERED_ON)
+comms.set_gear_state(State.POWERED_ON)
 
 # capture init
-gear_cam_server = Capture(config.VIDEO_SOURCE_GEAR, Modes.GEARS)
+gear_cam_server = Capture(config.VIDEO_SOURCE_GEAR, Mode.GEARS)
 
 
 # estimates the pose of a target, returns rvecs and tvecs
@@ -141,7 +141,7 @@ def gear_targeting(hsv):
 
     if target is not None:
         # set state
-        comms.set_gear_state(States.TARGET_FOUND)
+        comms.set_gear_state(State.TARGET_FOUND)
 
         rvecs, tvecs = estimate_pose(target)
 
@@ -166,7 +166,7 @@ def gear_targeting(hsv):
             cv2.putText(frame, str(horizontal), (10, 400), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, 9)
             cv2.putText(frame, str(forward), (10, 450), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, 9)
     else:
-        comms.set_gear_state(States.TARGET_NOT_FOUND)
+        comms.set_gear_state(State.TARGET_NOT_FOUND)
 
 
 def basic_frame_process(frame):
@@ -233,7 +233,7 @@ while True:
         # just keep looping :)
         print(e)
 
-comms.set_high_goal_state(States.POWERED_OFF)
-comms.set_gear_state(States.POWERED_OFF)
+comms.set_high_goal_state(State.POWERED_OFF)
+comms.set_gear_state(State.POWERED_OFF)
 log.info("Main loop exited successfully")
 log.info("FPS at time of exit: %s", fps)
