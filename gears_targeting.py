@@ -143,13 +143,25 @@ def gear_targeting(hsv):
         # set state
         comms.set_gear_state(State.TARGET_FOUND)
 
+        # fix origin
+        index = None
+        best_cost = 1000000
+        for i, p in enumerate(target):
+            cost = (p[0][0] + p[0][1])
+            if cost < best_cost:
+                best_cost = cost
+                index = i
+
+        target = np.append(target, target[:index], 0)[index:]
+        print(target)
+
         rvecs, tvecs = estimate_pose(target)
 
         R, _ = cv2.Rodrigues(rvecs)
         sy = math.sqrt(R[0, 0] * R[0, 0] + R[1, 0] * R[1, 0])
         y = math.atan2(-R[2, 0], sy)
 
-        rotation = -y / math.pi * 180
+        rotation = y / math.pi * 180
         horizontal = -float(tvecs[0])
         forward = float(tvecs[2])
 
