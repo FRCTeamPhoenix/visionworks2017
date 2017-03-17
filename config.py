@@ -84,10 +84,17 @@ VIDEO_SOURCE_GEAR = path_to_index('/dev/gear_cam')
 RESOLUTION_X = 640
 RESOLUTION_Y = 480
 ASPECT = float(RESOLUTION_Y) / RESOLUTION_X
-CAMERA_V4L_SETTINGS = collections.OrderedDict([
+CAMERA_SETTINGS_HIGH_GOAL = collections.OrderedDict([
     (v4l2ctl.PROP_EXPOSURE_AUTO, 1),
     (v4l2ctl.PROP_EXPOSURE_AUTO_PRIORITY, 0),
     (v4l2ctl.PROP_EXPOSURE_ABS, 20),
+    (v4l2ctl.PROP_WHITE_BALANCE_TEMP_AUTO, 0),
+    (v4l2ctl.PROP_FOCUS_AUTO, 0)
+])
+CAMERA_SETTINGS_GEARS = collections.OrderedDict([
+    (v4l2ctl.PROP_EXPOSURE_AUTO, 1),
+    (v4l2ctl.PROP_EXPOSURE_AUTO_PRIORITY, 0),
+    (v4l2ctl.PROP_EXPOSURE_ABS, 10),
     (v4l2ctl.PROP_WHITE_BALANCE_TEMP_AUTO, 0),
     (v4l2ctl.PROP_FOCUS_AUTO, 0)
 ])

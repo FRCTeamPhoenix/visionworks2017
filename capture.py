@@ -60,8 +60,12 @@ class Capture(object):
                         try:
                             log.info("Running Linux config using v4l2ctl")
                             v4l2ctl.restore_defaults(self.source)
-                            for prop in config.CAMERA_V4L_SETTINGS:
-                                v4l2ctl.set(self.source, prop, config.CAMERA_V4L_SETTINGS[prop])
+                            if self.type == Mode.HIGH_GOAL:
+                                for prop in config.CAMERA_SETTINGS_HIGH_GOAL:
+                                    v4l2ctl.set(self.source, prop, config.CAMERA_SETTINGS_HIGH_GOAL[prop])
+                            else:
+                                for prop in config.CAMERA_SETTINGS_GEARS:
+                                    v4l2ctl.set(self.source, prop, config.CAMERA_SETTINGS_GEARS[prop])
                         except AttributeError as e:
                             log.error('Setting camera properties failed!')
                             if type == Mode.HIGH_GOAL:
