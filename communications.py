@@ -36,7 +36,7 @@ def __send_number(k, v, timestamp):
 def set_high_goal_state(state):
     assert isinstance(state, State), 'Value is not a valid jetson state'
     last = None
-    if NetworkTableKey.HIGH_GOAL_STATE in __table.getKeys():
+    if NetworkTableKey.HIGH_GOAL_STATE.value in __table.getKeys():
         last = __table.getNumber(NetworkTableKey.HIGH_GOAL_STATE.value)
     if state.value != last:
         log.info('Set state %s', state.name)
