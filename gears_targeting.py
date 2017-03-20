@@ -153,30 +153,51 @@ def gear_targeting(hsv):
                 index = i
 
         target = np.append(target, target[:index], 0)[index:]
-        print(target)
 
+	#Calculate the rvecs and tvecs
         rvecs, tvecs = estimate_pose(target)
 
+        #rlen = np.linalg.norm(rvecs)
+        #rvecs *= (rlen - 12*math.pi/180) / rlen
+        #Rotation matrix derived from rodrigues vector rvec
         R, _ = cv2.Rodrigues(rvecs)
         sy = math.sqrt(R[0, 0] * R[0, 0] + R[1, 0] * R[1, 0])
-        y = math.atan2(-R[2, 0], sy)
+        y = math.atan2(-R[2, 0], sy) #Rotation of target relative to camera
 
-        rotation = y / math.pi * 180
-        horizontal = -float(tvecs[0])
-        forward = float(tvecs[2])
+        #The angle off normal of the camera mounted on the robot (to be 12 degrees)
+        cam_angle = 15 * math.pi / 180
+
+        #Alpha is the angle that the target is observed at by the camera
+        alpha = math.atan(tvecs[0] / tvecs[2])
+
+        #tlen is the distance from the camera to the center of the target
+        tlen = math.sqrt(tvecs[0]*tvecs[0] + tvecs[2]*tvecs[2])
+
+        #calculate the shift that the gear should move to be in line with the peg
+        shift = tlen * (math.sin(cam_angle + alpha) + math.cos(cam_angle + alpha) * math.tan(- y - cam_angle))
+
+        #Additionally, shift the center of the robot to be in line with the peg (note that the gear will no longer be in line)
+        shift += 14.5 * math.tan( - y - cam_angle)
+
+        rotation = (cam_angle - y) / math.pi * 180
+        #horizontal = -float(tvecs[0]) - 7
+	#Add a factor for the displacement of the gear from the camera
+        horizontal = shift + 7.875
+        forward = float(tvecs[2]) #FIX APPROACH
 
         comms.set_gear(rotation, horizontal, forward)
 
         if draw:
-            cv2.drawContours(frame, [target], 0, (0, 255, 0), 3)
+            cv2.drawContours(frame, [target + 12], 0, (0, 255, 0), 3)
             M = cv2.moments(target)
             cx = int(M['m10'] / M['m00'])
             cy = int(M['m01'] / M['m00'])
-            cv2.drawContours(frame, [np.array([[cx, cy]])], 0, (0, 0, 255), 10)
+            cv2.drawContours(frame, [np.array([[cx + 12, cy + 12]])], 0, (0, 0, 255), 10)
 
-            cv2.putText(frame, str(rotation), (10, 350), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, 9)
-            cv2.putText(frame, str(horizontal), (10, 400), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, 9)
-            cv2.putText(frame, str(forward), (10, 450), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, 9)
+            cv2.putText(frame, "rotation: " + str(rotation), (100, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, 9)
+            cv2.putText(frame, "alpha: " + str(alpha / math.pi * 180), (100, 90), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, 9)
+            cv2.putText(frame, "horizontal: " + str(horizontal), (100, 140), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, 9)
+            cv2.putText(frame, "tlen: " + str(tlen), (100, 190), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, 9)
     else:
         comms.set_gear_state(State.TARGET_NOT_FOUND)
 

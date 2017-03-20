@@ -37,7 +37,7 @@ USE_HTTP_SERVER = True
 SERVER_MODE = Mode.HIGH_GOAL
 
 # communications/networktables
-NETWORKTABLES_SERVER = 'roboRIO-2342-FRC.local'
+NETWORKTABLES_SERVER = 'roboRIO-142-FRC.local'
 NETWORKTABLES_TABLE_NAME = 'datatable'
 class NetworkTableKey(Enum):
     MODE = 'jetson_mode'
@@ -113,7 +113,7 @@ CAMERA_ANGLE = 38.4 # angle of the camera
 # processing tuning
 SHOOTER_THRESH_LOW = np.array([40, 20, 150])
 SHOOTER_THRESH_HIGH = np.array([85, 255, 255])
-GEAR_THRESH_LOW = np.array([70, 100, 100])
+GEAR_THRESH_LOW = np.array([60, 100, 100])
 GEAR_THRESH_HIGH = np.array([80, 255, 255])
 
 
