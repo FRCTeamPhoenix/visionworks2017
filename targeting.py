@@ -6,7 +6,7 @@ import math
 import logging
 import communications as comms
 import config
-from config import Mode, State
+from config import Modes, States
 import feed
 import thread
 from capture import Capture
@@ -29,8 +29,8 @@ res_x = config.RESOLUTION_X
 res_y = config.RESOLUTION_Y
 
 # image processing settings
-#shooter_thresh_low = config.SHOOTER_THRESH_LOW
-#shooter_thresh_high = config.SHOOTER_THRESH_HIGH
+shooter_thresh_low = config.SHOOTER_THRESH_LOW
+shooter_thresh_high = config.SHOOTER_THRESH_HIGH
 gear_thresh_low = config.GEAR_THRESH_LOW
 gear_thresh_high = config.GEAR_THRESH_HIGH
 morph_kernel_width = config.MORPH_KERNEL_WIDTH
@@ -44,8 +44,8 @@ dist = config.CAMERA_DISTORTION_MATRIX
 
 max_norm_tvecs = config.MAX_NORM_TVECS
 min_norm_tvecs = config.MIN_NORM_TVECS
-#max_shooter_area = config.MAX_SHOOTER_AREA
-#min_shooter_area = config.MIN_SHOOTER_AREA
+max_shooter_area = config.MAX_SHOOTER_AREA
+min_shooter_area = config.MIN_SHOOTER_AREA
 max_gears_area = config.MAX_GEARS_AREA
 min_gears_area = config.MIN_GEARS_AREA
 gears_objp = config.GEARS_OBJP
@@ -64,28 +64,12 @@ log = logging.getLogger(__name__)
 log.info('OpenCV %s', cv2.__version__)
 
 # send confirmation that we're alive
-comms.set_gear_state(State.POWERED_ON)
+comms.set_high_goal_state(States.POWERED_ON)
+comms.set_gear_state(States.POWERED_ON)
 
 # capture init
-gear_cam_server = Capture(config.VIDEO_SOURCE_GEAR, Mode.GEARS)
-
-
-# estimates the pose of a target, returns rvecs and tvecs
-def estimate_pose(target):
-    # fix array dimensions (aka unwrap the double wrapped array)
-    new = []
-    for r in target:
-        new.append([r[0][0], r[0][1]])
-    imgp = np.array(new, dtype=np.float64)
-
-    # calculate rotation and translation matrices
-    _, rvecs, tvecs = cv2.solvePnP(gears_objp, imgp, mtx, dist)
-
-    if cv2.norm(np.array(tvecs)) < min_norm_tvecs or cv2.norm(np.array(tvecs)) > max_norm_tvecs:
-        tvecs = None
-    if math.isnan(rvecs[0]):
-        rvecs = None
-    return rvecs, tvecs
+turret_cam_server = Capture(config.VIDEO_SOURCE_TURRET, Modes.HIGH_GOAL)
+gear_cam_server = Capture(config.VIDEO_SOURCE_GEAR, Modes.GEARS)
 
 
 def gear_targeting(hsv):
@@ -141,65 +125,91 @@ def gear_targeting(hsv):
 
     if target is not None:
         # set state
-        comms.set_gear_state(State.TARGET_FOUND)
+        comms.set_gear_state(States.TARGET_FOUND)
 
-        # fix origin
-        index = None
-        best_cost = 1000000
-        for i, p in enumerate(target):
-            cost = (p[0][0] + p[0][1])
-            if cost < best_cost:
-                best_cost = cost
-                index = i
+        area = cv2.contourArea(target)
+        distance = focal_length * math.sqrt(config.STEAMWORKS_GEAR_GOAL_AREA / area)
 
-        target = np.append(target, target[:index], 0)[index:]
+        M = cv2.moments(target)
+        cx = int(M['m10'] / M['m00'])
+        cy = int(M['m01'] / M['m00'])
 
-	#Calculate the rvecs and tvecs
-        rvecs, tvecs = estimate_pose(target)
+        # calculate the angle needed in order to align the target
+        distance_from_center = cx - (res_x / 2)
+        angle = distance_from_center * ptd  # pixel distance * conversion factor
 
-        #rlen = np.linalg.norm(rvecs)
-        #rvecs *= (rlen - 12*math.pi/180) / rlen
-        #Rotation matrix derived from rodrigues vector rvec
-        R, _ = cv2.Rodrigues(rvecs)
-        sy = math.sqrt(R[0, 0] * R[0, 0] + R[1, 0] * R[1, 0])
-        y = math.atan2(-R[2, 0], sy) #Rotation of target relative to camera
-
-        #The angle off normal of the camera mounted on the robot (to be 12 degrees)
-        cam_angle = -0 * math.pi / 180
-
-        #Alpha is the angle that the target is observed at by the camera
-        alpha = math.atan(tvecs[0] / tvecs[2])
-
-        #tlen is the distance from the camera to the center of the target
-        tlen = math.sqrt(tvecs[0]*tvecs[0] + tvecs[2]*tvecs[2])
-
-        #calculate the shift that the gear should move to be in line with the peg
-        shift = tlen * (math.sin(cam_angle + alpha) + math.cos(cam_angle + alpha) * math.tan(- y - cam_angle))
-
-        #Additionally, shift the center of the robot to be in line with the peg (note that the gear will no longer be in line)
-        shift += 14.5 * math.tan( - y - cam_angle)
-
-        rotation = (cam_angle - y) / math.pi * 180
-        #horizontal = -float(tvecs[0]) - 7
-	#Add a factor for the displacement of the gear from the camera
-        horizontal = shift + 7.875
-        forward = float(tvecs[2]) #FIX APPROACH
-
-        comms.set_gear(rotation, horizontal, forward)
-
+        comms.set_gear(angle, distance)
         if draw:
-            cv2.drawContours(frame, [target + 12], 0, (0, 255, 0), 3)
-            M = cv2.moments(target)
-            cx = int(M['m10'] / M['m00'])
-            cy = int(M['m01'] / M['m00'])
-            cv2.drawContours(frame, [np.array([[cx + 12, cy + 12]])], 0, (0, 0, 255), 10)
+            cv2.drawContours(frame, [target], 0, (0, 255, 0), 3)
+            # find the centroid of the target
+            cv2.putText(frame, str(distance), (10, 410), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, 9)
+            cv2.putText(frame, str(angle), (10, 450), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, 9)
 
-            cv2.putText(frame, "rotation: " + str(rotation), (100, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, 9)
-            cv2.putText(frame, "alpha: " + str(alpha / math.pi * 180), (100, 90), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, 9)
-            cv2.putText(frame, "horizontal: " + str(horizontal), (100, 140), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, 9)
-            cv2.putText(frame, "tlen: " + str(tlen), (100, 190), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, 9)
+            cv2.drawContours(frame, [np.array([[cx, cy]])], 0, (0, 0, 255), 10)
     else:
-        comms.set_gear_state(State.TARGET_NOT_FOUND)
+        comms.set_gear_state(States.TARGET_NOT_FOUND)
+
+
+def high_goal_targeting(hsv, turret_angle):
+    # threshold
+    mask = cv2.inRange(hsv, shooter_thresh_low, shooter_thresh_high)
+
+
+    # remove noise
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+    res = mask.copy()
+
+    # get a list of continuous lines in the image
+    contours, _ = cv2.findContours(mask, 1, 2)
+
+    # identify the target if there is one
+    target = None
+    if len(contours) > 0:
+        # find the two biggest contours
+        best_area1 = 0
+        best_area2 = 0
+        target1 = None
+        target2 = None
+        for c in contours:
+            area = cv2.contourArea(c)
+            if area > best_area1:
+                best_area2 = best_area1
+                target2 = target1
+                best_area1 = area
+                target1 = c
+            elif area > best_area2:
+                best_area2 = area
+                target2 = c
+        target = target1
+
+    if best_area1 > 0 and best_area2 > 0:
+        target = cv2.convexHull(np.concatenate((target1, target2)))
+
+    # if we found a target
+    if target is not None:
+        # set state
+        comms.set_high_goal_state(States.TARGET_FOUND)
+
+        # find the centroid of the target
+        M = cv2.moments(target)
+        cx = int(M['m10'] / M['m00'])
+        cy = int(M['m01'] / M['m00'])
+
+        # calculate the angle needed in order to align the target
+        distance_from_center = (res_x / 2) - cx
+        angle = distance_from_center * ptd # pixel distance * conversion factor
+
+        # send the (absolute) angle to the RIO
+        comms.set_high_goal(turret_angle + angle)
+
+        # draw debug information about the target on the frame
+        if draw:
+            cv2.drawContours(frame, [target], 0, (0, 255, 0), 3)
+            cv2.drawContours(frame, [np.array([[cx, cy]])], 0, (0, 0, 255), 10)
+            cv2.putText(frame, str(angle), (10, 450), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, 9)
+    else:
+        comms.set_high_goal_state(States.TARGET_NOT_FOUND)
 
 
 def basic_frame_process(frame):
@@ -220,26 +230,47 @@ frametimes = list()
 last = time.time()
 fps = 0
 
-
-#config.SERVER_MODE = int(sys.argv[2])
-run_server = config.USE_HTTP_SERVER and len(sys.argv) > 1
-if run_server:
-    port = int(sys.argv[1])
-    thread.start_new_thread(feed.init, (gear_cam_server, port))
+config.SERVER_MODE = int(sys.argv[2])
+if config.USE_HTTP_SERVER:
+    thread.start_new_thread(feed.init, (turret_cam_server if config.SERVER_MODE == 0 else gear_cam_server, int(sys.argv[1])))
 
 log.info("Starting vision processing loop")
 # loop for as long as we're still getting images
 while True:
 
     try:
-        if gear_cam_server.rval:
+        #mode = comms.get_mode()
+        mode = int(sys.argv[2])
+
+	print(mode)
+        if mode == Modes.NOT_YET_SET:
+            continue
+
+	print(turret_cam_server.rval)
+        if turret_cam_server.rval and (mode == 0): #Modes.HIGH_GOAL or mode == Modes.BOTH):
+	    print("Mode high goal")
+            turret_cam_server.update()
+            turret_angle = comms.get_turret_angle()
+	    if turret_angle == None:
+		turret_angle = 0
+            rval, frame = turret_cam_server.rval, turret_cam_server.frame
+            #if turret_angle:
+            hsv = basic_frame_process(frame)
+            high_goal_targeting(hsv, turret_angle)
+            if draw:
+                cv2.putText(frame, str(fps), (10, 40), cv.CV_FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2, 8)
+            if config.USE_HTTP_SERVER:
+		print("Setting JPEG")
+                turret_cam_server.set_jpeg(frame)
+
+        if gear_cam_server.rval and (mode == 1): #Modes.GEARS or mode == Modes.BOTH):
             gear_cam_server.update()
             rval, frame = gear_cam_server.rval, gear_cam_server.frame
             hsv = basic_frame_process(frame)
             gear_targeting(hsv)
             if draw:
                 cv2.putText(frame, str(fps), (10, 40), cv.CV_FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2, 8)
-            if run_server:
+            if config.USE_HTTP_SERVER:
                 gear_cam_server.set_jpeg(frame)
 
         # calculate fps
@@ -266,7 +297,7 @@ while True:
         # just keep looping :)
         print(e)
 
-comms.set_high_goal_state(State.POWERED_OFF)
-comms.set_gear_state(State.POWERED_OFF)
+comms.set_high_goal_state(States.POWERED_OFF)
+comms.set_gear_state(States.POWERED_OFF)
 log.info("Main loop exited successfully")
 log.info("FPS at time of exit: %s", fps)

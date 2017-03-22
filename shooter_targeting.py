@@ -12,6 +12,7 @@ import thread
 from capture import Capture
 import sys
 from itertools import combinations
+import traceback
 
 # gui config/mode stuff (see config.py for details)
 show_image = config.GUI_SHOW
@@ -64,6 +65,7 @@ comms.set_high_goal_state(State.POWERED_ON)
 # capture init
 turret_cam_server = Capture(config.VIDEO_SOURCE_TURRET, Mode.HIGH_GOAL)
 
+#rolling_angle_x = comms.get_turret_angle()
 
 def high_goal_targeting(hsv, turret_angle):
     # threshold
@@ -103,7 +105,7 @@ def high_goal_targeting(hsv, turret_angle):
 
             return offset_x * 6 + offset_y
     
-        lowest_cost = 10000
+        lowest_cost = 300
         best_contours = None
         for p1, p2 in combinations(contours_with_areas, 2):
             c1, a1 = p1[0], p1[1]
@@ -113,7 +115,8 @@ def high_goal_targeting(hsv, turret_angle):
             if cost < lowest_cost:
                 lowest_cost = cost
                 best_contours = (c1, c2)
-        target = cv2.convexHull(np.concatenate((best_contours[0], best_contours[1])))
+        if best_contours:
+            target = cv2.convexHull(np.concatenate((best_contours[0], best_contours[1])))
 
     # if we found a target
     if target is not None:
@@ -129,14 +132,16 @@ def high_goal_targeting(hsv, turret_angle):
         angle_x = ((res_x / 2) - cx) * ptd # pixel distance * conversion factor
         angle_y = ((res_y / 2) - cy) * ptd + config.CAMERA_ANGLE
         distance = abs((config.STEAMWORKS_HIGH_GOAL_CENTER_HEIGHT - config.CAMERA_HEIGHT) / math.tan(math.radians(angle_y)))
+        
+        #rolling_angle_x = rolling_angle_x * 0.5 + angle_x * 0.5
 
         # send the (absolute) angle and distance to the RIO
         comms.set_high_goal(turret_angle + angle_x, distance)
 	
         # draw debug information about the target on the frame
         if draw:
-            cv2.drawContours(frame, [target], 0, (0, 255, 0), 3)
-            cv2.drawContours(frame, [np.array([[cx, cy]])], 0, (0, 0, 255), 10)
+            cv2.drawContours(frame, [target + 12], 0, (0, 255, 0), 3)
+            cv2.drawContours(frame, [np.array([[cx + 12, cy + 12]])], 0, (0, 0, 255), 10)
             cv2.putText(frame, str(angle_x), (10, 450), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, 9)
             cv2.putText(frame, str(distance), (10, 410), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255),2,9)
     else:
@@ -209,11 +214,15 @@ while True:
 
         # record time for fps calculation
         last = time.time()
-
     except Exception as e:
         # in real life situations on the field, we want to continue even if something goes really wrong.
         # just keep looping :)
-        print(e)
+        tb = traceback.format_exc()
+    else:
+        tb = None
+    finally:
+        if tb:
+            print(tb)
 
 comms.set_high_goal_state(State.POWERED_OFF)
 comms.set_gear_state(State.POWERED_OFF)

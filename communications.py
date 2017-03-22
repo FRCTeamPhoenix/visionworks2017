@@ -65,9 +65,11 @@ def set_high_goal(angle, distance):
 
 
 def get_turret_angle():
+    print("get_turret_angle: " + str(__table.getNumber(NetworkTableKey.TURRET_ANGLE.value)))
     if NetworkTableKey.TURRET_ANGLE in __table.getKeys():
-        return __table.getNumber(NetworkTableKey.TURRET_ANGLE)
-    return None
+        print("Got angle")
+    return __table.getNumber(NetworkTableKey.TURRET_ANGLE.value)
+    #return None
 
 
 def set_gear(rotation, horizontal, forward):
