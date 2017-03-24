@@ -67,6 +67,8 @@ turret_cam_server = Capture(config.VIDEO_SOURCE_TURRET, Mode.HIGH_GOAL)
 
 #rolling_angle_x = comms.get_turret_angle()
 
+angles = list()
+
 def high_goal_targeting(hsv, turret_angle):
     # threshold
     mask = cv2.inRange(hsv, shooter_thresh_low, shooter_thresh_high)
@@ -133,11 +135,14 @@ def high_goal_targeting(hsv, turret_angle):
         angle_y = ((res_y / 2) - cy) * ptd + config.CAMERA_ANGLE
         distance = abs((config.STEAMWORKS_HIGH_GOAL_CENTER_HEIGHT - config.CAMERA_HEIGHT) / math.tan(math.radians(angle_y)))
         
-        #rolling_angle_x = rolling_angle_x * 0.5 + angle_x * 0.5
+        angles.append(angle_x)
+        if len(angles) > 10:
+            angles.pop(0)
+        angle_x = sum(angles) / len(angles)
 
         # send the (absolute) angle and distance to the RIO
         comms.set_high_goal(turret_angle + angle_x, distance)
-	
+
         # draw debug information about the target on the frame
         if draw:
             cv2.drawContours(frame, [target + 12], 0, (0, 255, 0), 3)
@@ -146,6 +151,7 @@ def high_goal_targeting(hsv, turret_angle):
             cv2.putText(frame, str(distance), (10, 410), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255),2,9)
     else:
         comms.set_high_goal_state(State.TARGET_NOT_FOUND)
+        angles[:] = []
 
     return frame
 
@@ -200,7 +206,7 @@ while True:
         frametimes.append(time.time() - last)
         if len(frametimes) > 60:
             frametimes.pop(0)
-        fps = int(1 / (sum(frametimes) / len(frametimes)))
+        #fps = int(1 / (sum(frametimes) / len(frametimes)))
 
         if show_image:
             cv2.imshow('frame', frame)
