@@ -70,8 +70,8 @@ turret_cam_server.update()
 def high_goal_targeting(hsv, turret_angle):
 
     # print average brightness
-    if turret_cam_server.frame_count < 20:
-        print('BRIGHTNESS:' + str(cv2.mean(hsv[2])[0]))
+    if True:#turret_cam_server.frame_count < 20:
+        log.info('BRIGHTNESS:' + str(cv2.mean(hsv[2])[0]))
 
     # threshold
     mask = cv2.inRange(hsv, shooter_thresh_low, shooter_thresh_high)
