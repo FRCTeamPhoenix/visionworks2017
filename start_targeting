@@ -1,4 +1,4 @@
 #!/bin/bash
 cd "$(dirname "$0")"
-(python shooter_targeting.py 5000 &)
+(python start_shooter_targeting.py &)
 (python gears_targeting.py 5001 &)
