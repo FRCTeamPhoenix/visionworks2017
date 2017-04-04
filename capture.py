@@ -15,6 +15,7 @@ class Capture(object):
     jpeg = None
     jpeg2 = None
     rval = None
+    frame_count = 0
 
 
     def __init__(self, source, type):
@@ -37,6 +38,7 @@ class Capture(object):
 
     def update(self):
         self.rval, self.frame = self.video.read()
+        self.frame_count += 1
         # We are using Motion JPEG, but OpenCV defaults to capture raw images,
         # so we must encode it into JPEG in order to correctly display the
         # video stream.
