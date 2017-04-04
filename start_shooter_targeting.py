@@ -28,6 +28,7 @@ while True:
 
     # adjust this range with tests probably
     if brightness > brightnesses[0] + 10 or brightness < brightnesses[0] - 10:
+        print('Incorrect run...')
         p.kill()
     else:
         print('Correct exposure run found')
