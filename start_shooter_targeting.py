@@ -1,21 +1,31 @@
 from subprocess import PIPE, Popen
 import select
 import time
+from config import CALIBRATE_LIVE, SAVE_CALIBRATION, CALIBRATION_FILENAME
+import os
 
-brightnesses = []
-
-# run program 10 times and record brightness each time
-for i in range(10):
-    p = Popen(['python', 'shooter_targeting.py', '5000'], stdout=PIPE)
-    for line in iter(p.stdout.readline, b''):
-        print line,
-        if 'BRIGHTNESS' in line:
-            brightnesses.append(float(line.split(':')[-1]))
-            print('Brightness ' + str(i))
-            break
-    p.kill()
-    p.wait()
-
+file_exists = os.path.isfile(CALIBRATION_FILENAME)
+if CALIBRATE_LIVE or not file_exists:
+    brightnesses = []
+    # run program 10 times and record brightness each time
+    for i in range(10):
+        p = Popen(['python', 'shooter_targeting.py', '5000'], stdout=PIPE)
+        for line in iter(p.stdout.readline, b''):
+            print line,
+            if 'BRIGHTNESS' in line:
+                brightnesses.append(float(line.split(':')[-1]))
+                print('Brightness ' + str(i))
+                break
+        p.kill()
+        p.wait()
+    if SAVE_CALIBRATION or not file_exists:
+        f = open(CALIBRATION_FILENAME, 'w+')
+        f.write(str(brightnesses).replace(' ', '')[1:-1])
+        f.close()
+else:
+    brightnesses = open(CALIBRATION_FILENAME, 'r').read().split(',')
+    for i, n in enumerate(brightnesses):
+        brightnesses[i] = float(n)
 
 brightnesses.sort()
 print(brightnesses)

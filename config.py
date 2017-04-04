@@ -24,6 +24,10 @@ class State(Enum):
 WAIT_TIME = 25 # wait time in the main loop
 START_FRAME = 0 # for video replays
 
+# Calibration
+CALIBRATE_LIVE = False
+SAVE_CALIBRATION = True
+CALIBRATION_FILENAME = 'brightness_calibration.txt'
 
 # GUI configuration
 GUI_SHOW = False
@@ -54,6 +58,8 @@ class NetworkTableKey(Enum):
 # logging config
 LOG_LEVEL = logging.INFO
 
+# LOGGING TO A FILE WILL NOW BREAK BRIGHTNESS CALIBRATION
+# YOU HAVE BEEN WARNED
 filename = datetime.now().strftime('%Y%m%d-%H:%M') + '.log'
 LOG_STREAM = sys.stdout#open(filename, 'w+')
 #sys.stdout = LOG_STREAM
@@ -87,7 +93,7 @@ ASPECT = float(RESOLUTION_Y) / RESOLUTION_X
 CAMERA_SETTINGS_HIGH_GOAL = collections.OrderedDict([
     (v4l2ctl.PROP_EXPOSURE_AUTO, 1),
     (v4l2ctl.PROP_EXPOSURE_AUTO_PRIORITY, 0),
-    (v4l2ctl.PROP_EXPOSURE_ABS, 20),
+    (v4l2ctl.PROP_EXPOSURE_ABS, 10),
     (v4l2ctl.PROP_WHITE_BALANCE_TEMP_AUTO, 0),
     (v4l2ctl.PROP_FOCUS_AUTO, 0)
 ])
@@ -111,7 +117,7 @@ CAMERA_HEIGHT = 21.5 # height of the camera off the ground (inches)
 CAMERA_ANGLE = 38.4 # angle of the camera
 
 # processing tuning
-SHOOTER_THRESH_LOW = np.array([70, 60, 25])
+SHOOTER_THRESH_LOW = np.array([60, 80, 64])
 SHOOTER_THRESH_HIGH = np.array([80, 255, 255])
 GEAR_THRESH_LOW = np.array([60, 100, 100])
 GEAR_THRESH_HIGH = np.array([80, 255, 255])
@@ -130,7 +136,7 @@ GEARS_OBJP = np.array([[-5.125, -2.5, 0],
                        [-5.125, 2.5, 0]])
 
 # bounds for target size
-MIN_SHOOTER_AREA = 0.00002 * RESOLUTION_X * RESOLUTION_Y
+MIN_SHOOTER_AREA = 0.00005 * RESOLUTION_X * RESOLUTION_Y
 MAX_SHOOTER_AREA = 0.3 * RESOLUTION_X * RESOLUTION_Y
 MIN_GEARS_AREA = 0.0002 * RESOLUTION_X * RESOLUTION_Y
 MAX_GEARS_AREA = 0.4 * RESOLUTION_X * RESOLUTION_Y
