@@ -26,8 +26,8 @@ while True:
             brightness = float(line.split(':')[1])
             break
 
-    # adjust this range with tests probably
-    if brightness > brightnesses[0] + 10 or brightness < brightnesses[0] - 10:
+    # adjust this range with tests probably, right now it just aims to be within 10 brightness in either direction
+    if brightness > target + 10 or brightness < target - 10:
         print('Incorrect run...')
         p.kill()
     else:
