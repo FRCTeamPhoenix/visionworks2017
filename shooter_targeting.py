@@ -64,10 +64,7 @@ comms.set_high_goal_state(State.POWERED_ON)
 
 # capture init
 turret_cam_server = Capture(config.VIDEO_SOURCE_TURRET, Mode.HIGH_GOAL)
-
-#rolling_angle_x = comms.get_turret_angle()
-
-angles = list()
+turret_cam_server.update()
 
 def high_goal_targeting(hsv, turret_angle):
     # threshold
@@ -88,11 +85,13 @@ def high_goal_targeting(hsv, turret_angle):
     if len(contours) >= 2:
         for c in contours:
             area = cv2.contourArea(c)
-            if area > config.MIN_SHOOTER_AREA:
+            x, y, w, h = cv2.boundingRect(c)
+
+            # minimum area check and solidity check
+            if area > config.MIN_SHOOTER_AREA:# and area / (w * h) > 0.62:
                 contours_with_areas.append((c, area))
         contours_with_areas.sort(key=lambda x: -x[1])
         contours_with_areas = contours_with_areas[:6]
-    
 
         def high_goal_cost(c1, c2):
             M1 = cv2.moments(c1)
@@ -134,11 +133,6 @@ def high_goal_targeting(hsv, turret_angle):
         angle_x = ((res_x / 2) - cx) * ptd # pixel distance * conversion factor
         angle_y = ((res_y / 2) - cy) * ptd + config.CAMERA_ANGLE
         distance = abs((config.STEAMWORKS_HIGH_GOAL_CENTER_HEIGHT - config.CAMERA_HEIGHT) / math.tan(math.radians(angle_y)))
-        
-        angles.append(angle_x)
-        if len(angles) > 10:
-            angles.pop(0)
-        angle_x = sum(angles) / len(angles)
 
         # send the (absolute) angle and distance to the RIO
         comms.set_high_goal(turret_angle + angle_x, distance)
@@ -151,9 +145,8 @@ def high_goal_targeting(hsv, turret_angle):
             cv2.putText(frame, str(distance), (10, 410), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255),2,9)
     else:
         comms.set_high_goal_state(State.TARGET_NOT_FOUND)
-        angles[:] = []
 
-    return frame
+    return frame, res
 
 
 def basic_frame_process(frame):
@@ -196,11 +189,12 @@ while True:
 
             if turret_angle is not None:
                 hsv = basic_frame_process(frame)
-                frame = high_goal_targeting(hsv, turret_angle)
+                frame, res = high_goal_targeting(hsv, turret_angle)
             if draw:
                 cv2.putText(frame, str(fps), (10, 40), cv.CV_FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2, 8)
             if config.USE_HTTP_SERVER:
                 turret_cam_server.set_jpeg(frame)
+                turret_cam_server.set_jpeg2(res)
 
         # calculate fps
         frametimes.append(time.time() - last)

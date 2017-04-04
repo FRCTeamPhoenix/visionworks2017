@@ -13,6 +13,7 @@ log = logging.getLogger(__name__)
 class Capture(object):
     frame = None
     jpeg = None
+    jpeg2 = None
     rval = None
 
 
@@ -42,6 +43,9 @@ class Capture(object):
 
     def set_jpeg(self, frame):
         self.jpeg = cv2.imencode('.jpg', frame)[1].tostring()
+
+    def set_jpeg2(self, frame):
+        self.jpeg2 = cv2.imencode('.jpg', frame)[1].tostring()
 
     def __configure(self):
         if self.rval:
