@@ -154,7 +154,7 @@ def gear_targeting(hsv):
 
         target = np.append(target, target[:index], 0)[index:]
 
-	#Calculate the rvecs and tvecs
+        #Calculate the rvecs and tvecs
         rvecs, tvecs = estimate_pose(target)
 
         #rlen = np.linalg.norm(rvecs)
